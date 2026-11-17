@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="build" content="2026-11-13.9" />
+  <meta name="build" content="2026-11-17.2-shark-upgrade" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -243,7 +243,12 @@
     // Game State
     let gameState = 'START';
     let score = 0;
-    let highScore = Number(localStorage.getItem('shark_parkour_16bit_hs') || 0);
+    let highScore = 0;
+    try {
+      highScore = Number(localStorage.getItem('shark_parkour_16bit_hs') || 0);
+    } catch (storageError) {
+      // Continue with an in-memory high score when storage is unavailable.
+    }
     let speedMultiplier = 1;
     let screenShake = 0;
     let hitStopTimer = 0;
@@ -276,6 +281,8 @@
       maxHp: 3,
       runCycle: 0,
       spinAngle: 0,
+      inWater: false,
+      waterBubbleTimer: 0,
       afterImages: []
     };
 
@@ -300,6 +307,19 @@
     let laserList = [];
     let particles = [];
     let floatingTexts = [];
+    let bossHazards = [];
+    let attackCycle = 0;
+    let titanFuryMode = false;
+    let furyBannerTimer = 0;
+
+    const STAGES = [
+      { name: 'NEON HARBOR', sky: ['#090d26','#101842','#1a2766','#25398c','#364fb3','#5b4b9e','#8c4378','#b84a54'], water: '#1d4ed8', wave: '#60a5fa', tile: '#b45309', tileDark: '#451a03', top: '#15803d', topLight: '#22c55e', accent: '#38bdf8' },
+      { name: 'CORAL CAVERNS', sky: ['#071b2b','#0b3445','#10566a','#147d83','#219c91','#36a58a','#5a9c76','#8cb56b'], water: '#0e7490', wave: '#67e8f9', tile: '#9f1239', tileDark: '#4c0519', top: '#0f766e', topLight: '#2dd4bf', accent: '#f472b6' },
+      { name: 'VOLCANIC TRENCH', sky: ['#180b16','#35101b','#57151b','#7c2418','#a33a16','#c45a1a','#e07824','#f59e0b'], water: '#7f1d1d', wave: '#fb923c', tile: '#78350f', tileDark: '#431407', top: '#9a3412', topLight: '#ea580c', accent: '#facc15' },
+      { name: 'FROSTBYTE REEF', sky: ['#071426','#0c2344','#123b68','#1d5b89','#367fa8','#62a5c7','#9ac8dc','#d2eaf2'], water: '#0369a1', wave: '#bae6fd', tile: '#475569', tileDark: '#1e293b', top: '#0e7490', topLight: '#22d3ee', accent: '#e0f2fe' }
+    ];
+    function currentStage() { return STAGES[Math.floor(score / 600) % STAGES.length]; }
+    function currentStageNumber() { return Math.floor(score / 600) % STAGES.length; }
 
     // Input Tracking
     const keys = {};
@@ -422,12 +442,18 @@
       player.isGrounded = true;
       player.isSliding = false;
       player.invulnTimer = 0;
+      player.inWater = false;
+      player.waterBubbleTimer = 0;
       player.hp = player.maxHp;
       player.afterImages = [];
 
       resetPlatforms();
       debrisList = [];
       laserList = [];
+      bossHazards = [];
+      attackCycle = 0;
+      titanFuryMode = false;
+      furyBannerTimer = 0;
       particles = [];
       floatingTexts = [];
       titan.attackCooldown = 1.3;
@@ -474,19 +500,31 @@
     // TITAN ATTACK PATTERNS
     // ==========================================
     function spawnTitanAttack() {
-      const chooseLaser = titan.lastAttackType === 'DEBRIS' ? true :
-                          titan.lastAttackType === 'LASER' ? false :
-                          Math.random() < 0.45;
-
-      if (!chooseLaser) {
-        titan.lastAttackType = 'DEBRIS';
+      const attack = ['DEBRIS', 'LASER', 'SHOCKWAVE', 'DRONE'][attackCycle % 4];
+      attackCycle++;
+      titan.lastAttackType = attack;
+      if (attack === 'DEBRIS') {
         spawnDebrisPattern();
-        titan.attackCooldown = Math.max(1.45, 2.4 / speedMultiplier);
-      } else {
-        titan.lastAttackType = 'LASER';
+        titan.attackCooldown = Math.max(1.55, 2.35 / speedMultiplier);
+      } else if (attack === 'LASER') {
         spawnTrackingLaserVolley();
-        titan.attackCooldown = Math.max(2.6, 3.6 / speedMultiplier);
+        titan.attackCooldown = Math.max(2.5, 3.5 / speedMultiplier);
+      } else if (attack === 'SHOCKWAVE') {
+        bossHazards.push({ type: 'SHOCKWAVE', x: 900, y: BASE_GROUND_Y - 28, w: 54, h: 28, state: 'WARN', timer: titanFuryMode ? 0.58 : 0.78, speed: titanFuryMode ? 650 : 560 });
+        if (titanFuryMode) bossHazards.push({ type: 'SHOCKWAVE', x: 1110, y: BASE_GROUND_Y - 28, w: 54, h: 28, state: 'WARN', timer: 1.05, speed: 690 });
+        titan.slamHand = titan.slamHand === 'LEFT' ? 'RIGHT' : 'LEFT';
+        titan.slamState = 'RAISE';
+        titan.slamTimer = 0.78;
+        titan.chargeLevel = 0.7;
+        titan.attackCooldown = Math.max(2.2, 3.1 / speedMultiplier);
+      } else {
+        const targetY = Math.max(92, Math.min(BASE_GROUND_Y - 86, player.y + player.h / 2));
+        bossHazards.push({ type: 'DRONE', x: titan.x - 115, y: targetY, w: 38, h: 30, state: 'WARN', timer: titanFuryMode ? 0.52 : 0.7, speed: titanFuryMode ? 530 : 440 });
+        if (titanFuryMode) bossHazards.push({ type: 'DRONE', x: titan.x + 5, y: Math.max(86, Math.min(BASE_GROUND_Y - 120, targetY - 105)), w: 38, h: 30, state: 'WARN', timer: 0.92, speed: 500 });
+        titan.chargeLevel = 0.8;
+        titan.attackCooldown = Math.max(2.3, 3.2 / speedMultiplier);
       }
+      if (titanFuryMode) titan.attackCooldown *= 0.68;
     }
 
     function spawnDebrisPattern() {
@@ -506,6 +544,7 @@
             w: 54,
             y: -54,
             h: 48,
+            waterSide: idx % 2 === 0 ? 1 : -1,
             warnTimer: warnTime + idx * 0.22,
             state: 'WARN',
             impactTimer: 0,
@@ -519,6 +558,7 @@
             w: 72,
             y: -54,
             h: 54,
+            waterSide: xPos < anchorX ? 1 : -1,
             warnTimer: warnTime,
             state: 'WARN',
             impactTimer: 0,
@@ -531,6 +571,7 @@
           w: 108,
           y: -60,
           h: 60,
+          waterSide: 1,
           warnTimer: warnTime + 0.1,
           state: 'WARN',
           impactTimer: 0,
@@ -577,7 +618,11 @@
         gameState = 'GAMEOVER';
         if (Math.floor(score) > highScore) {
           highScore = Math.floor(score);
-          localStorage.setItem('shark_parkour_16bit_hs', highScore);
+          try {
+            localStorage.setItem('shark_parkour_16bit_hs', highScore);
+          } catch (storageError) {
+            // Saving a high score is optional in restricted browser contexts.
+          }
         }
       }
     }
@@ -672,7 +717,19 @@
       const scrollSpeed = 290 * speedMultiplier;
       score += dt * 18 * speedMultiplier;
       speedMultiplier = 1 + Math.min(0.75, score / 1600);
-      worldScroll += scrollSpeed * dt;
+      if (!titanFuryMode && score >= 1000) {
+        titanFuryMode = true;
+        furyBannerTimer = 3.2;
+        titan.attackCooldown = Math.min(titan.attackCooldown, 0.65);
+        titan.chargeLevel = 1;
+        screenShake = Math.max(screenShake, 10);
+        spawnParticles(titan.x - 18, titan.y + 45, '#facc15', 28);
+        floatingTexts.push({ x: 450, y: 150, text: 'TITAN FURY UNLEASHED!', life: 2.2 });
+        SFX.laserFire();
+      }
+      if (furyBannerTimer > 0) furyBannerTimer = Math.max(0, furyBannerTimer - dt);
+      worldScroll += scrollSpeed * dt * (titanFuryMode ? 1.12 : 1);
+
 
       // Scroll Platforms & Generate New Sections
       for (let i = platforms.length - 1; i >= 0; i--) {
@@ -742,9 +799,45 @@
         });
       }
 
+      // Water currents beside falling debris automatically carry the shark upward.
+      const wasInWater = player.inWater;
+      player.inWater = debrisList.some((d) => {
+        if (!['WARN', 'FALL', 'IMPACT'].includes(d.state)) return false;
+        const waterX = d.x + (d.waterSide > 0 ? d.w + 5 : -23);
+        const waterTop = 0;
+        const waterBottom = BASE_GROUND_Y;
+        return player.x + player.w > waterX &&
+          player.x < waterX + 18 &&
+          player.y + player.h > waterTop &&
+          player.y < waterBottom;
+      });
+
       // Vertical Gravity & One-Way Platform Landing
       const prevBottom = player.y + player.h;
-      player.vy += GRAVITY * dt;
+      if (player.inWater) {
+        player.vy = Math.min(player.vy, -560);
+        player.isGrounded = false;
+        if (player.isSliding) stopSlide();
+        if (wasInWater !== true) {
+          addScoreBonus(25, player.x + player.w / 2, player.y - 10, 'WATER BOOST!');
+          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#67e8f9', 8);
+        }
+        player.waterBubbleTimer -= dt;
+        if (player.waterBubbleTimer <= 0) {
+          particles.push({
+            x: player.x + player.w / 2 + (Math.random() - 0.5) * 24,
+            y: player.y + player.h,
+            vx: (Math.random() - 0.5) * 28,
+            vy: -90 - Math.random() * 70,
+            size: 3 + Math.floor(Math.random() * 3),
+            color: '#a5f3fc',
+            life: 0.45
+          });
+          player.waterBubbleTimer = 0.08;
+        }
+      } else {
+        player.vy += GRAVITY * dt;
+      }
       player.y += player.vy * dt;
       player.isGrounded = false;
 
@@ -774,7 +867,9 @@
 
       const animSpeed = player.vx > 0 ? 23 : player.vx < 0 ? 12 : 18;
       player.runCycle += dt * animSpeed * speedMultiplier;
-      if (!player.isGrounded) {
+      if (player.inWater) {
+        player.spinAngle = -Math.PI / 2;
+      } else if (!player.isGrounded) {
         player.spinAngle += dt * 26 * player.facing;
       } else {
         player.spinAngle = 0;
@@ -833,6 +928,29 @@
             player.y + player.h > d.y
           ) {
             damagePlayer();
+          }
+        }
+      }
+
+      // New Titan attacks: a ground shockwave (jump over it) and an electric drone (dodge vertically).
+      for (let i = bossHazards.length - 1; i >= 0; i--) {
+        const h = bossHazards[i];
+        if (h.state === 'WARN') {
+          h.timer -= dt;
+          if (h.timer <= 0) {
+            h.state = 'MOVE';
+            if (h.type === 'SHOCKWAVE') SFX.debrisImpact();
+            else SFX.laserFire();
+          }
+        } else {
+          h.x -= h.speed * dt;
+          if (h.type === 'DRONE') h.y += Math.sin(Date.now() * 0.006 + i) * 18 * dt;
+          const overlap = player.x + player.w - 7 > h.x && player.x + 7 < h.x + h.w &&
+            player.y + player.h - 4 > h.y && player.y + 4 < h.y + h.h;
+          if (overlap) damagePlayer();
+          if (h.x + h.w < -20) {
+            if (h.type === 'SHOCKWAVE' && player.invulnTimer <= 0) addScoreBonus(75, player.x + 20, player.y - 14, '+75 JUMPED!');
+            bossHazards.splice(i, 1);
           }
         }
       }
@@ -910,10 +1028,8 @@
       }
 
       // 1. 16-Bit Segmented Twilight-to-Sunset Sky
-      const skyBands = [
-        '#090d26', '#101842', '#1a2766', '#25398c',
-        '#364fb3', '#5b4b9e', '#8c4378', '#b84a54'
-      ];
+      const stage = currentStage();
+      const skyBands = stage.sky;
       const bandH = Math.ceil(BASE_GROUND_Y / skyBands.length);
       skyBands.forEach((col, idx) => {
         pxRect(0, idx * bandH, canvas.width, bandH, col);
@@ -928,11 +1044,11 @@
       });
 
       // Distant 16-bit Pixel Ocean / Horizon Water Strip
-      pxRect(0, BASE_GROUND_Y - 36, canvas.width, 36, '#1d4ed8');
-      pxRect(0, BASE_GROUND_Y - 36, canvas.width, 4, '#60a5fa');
+      pxRect(0, BASE_GROUND_Y - 36, canvas.width, 36, stage.water);
+      pxRect(0, BASE_GROUND_Y - 36, canvas.width, 4, stage.wave);
       for (let wx = -Math.round((worldScroll * 0.6) % 48); wx < canvas.width; wx += 48) {
-        pxRect(wx, BASE_GROUND_Y - 26, 24, 3, '#93c5fd');
-        pxRect(wx + 12, BASE_GROUND_Y - 14, 20, 3, '#3b82f6');
+        pxRect(wx, BASE_GROUND_Y - 26, 24, 3, stage.wave);
+        pxRect(wx + 12, BASE_GROUND_Y - 14, 20, 3, stage.accent);
       }
 
       // Multi-Layer Parallax Pixel Clouds
@@ -950,9 +1066,9 @@
         const mh = 96 + ((m * 53) % 84);
         const topY = BASE_GROUND_Y - mh;
 
-        pxRect(mx, topY, 96, mh, '#0f172a');
-        pxRect(mx, topY, 4, mh, '#1e3a8a');
-        pxRect(mx, topY, 96, 6, '#38bdf8');
+        pxRect(mx, topY, 96, mh, currentStageNumber() === 2 ? '#431407' : currentStageNumber() === 3 ? '#334155' : '#0f172a');
+        pxRect(mx, topY, 4, mh, stage.accent);
+        pxRect(mx, topY, 96, 6, stage.accent);
 
         pxRect(mx + 45, topY - 18, 4, 18, '#475569');
         if (Math.floor(Date.now() / 300 + m) % 2 === 0) {
@@ -960,9 +1076,9 @@
         }
 
         for (let wy = topY + 18; wy < BASE_GROUND_Y - 40; wy += 18) {
-          pxRect(mx + 16, wy, 10, 8, (m + wy) % 3 === 0 ? '#facc15' : '#38bdf8');
+          pxRect(mx + 16, wy, 10, 8, (m + wy) % 3 === 0 ? '#facc15' : stage.accent);
           pxRect(mx + 42, wy, 10, 8, '#1e293b');
-          pxRect(mx + 68, wy, 10, 8, (m + wy) % 2 === 0 ? '#f43f5e' : '#38bdf8');
+          pxRect(mx + 68, wy, 10, 8, (m + wy) % 2 === 0 ? '#f43f5e' : stage.wave);
         }
       }
 
@@ -972,7 +1088,27 @@
       // 3. Beveled Sonic-Style Checkerboard Platforms
       drawPlatforms16Bit();
 
-      // 4. Draw Debris Warnings & Shaded Pixel Meteors
+      // 4. Cyan water columns trail beside every falling debris piece.
+      debrisList.forEach((d) => {
+        if (!['WARN', 'FALL', 'IMPACT'].includes(d.state)) return;
+        const waterX = Math.round(d.x + (d.waterSide > 0 ? d.w + 5 : -23));
+        const waterTop = 0;
+        const waterHeight = Math.max(0, BASE_GROUND_Y - waterTop);
+        if (waterHeight <= 0) return;
+        const flow = Math.floor(Date.now() / 90) % 12;
+        pxRect(waterX - 3, waterTop, 24, waterHeight, 'rgba(8, 145, 178, 0.28)');
+        pxRect(waterX + 4, waterTop, 10, waterHeight, 'rgba(34, 211, 238, 0.42)');
+        for (let wy = waterTop + flow; wy < BASE_GROUND_Y; wy += 24) {
+          pxRect(waterX + 1, wy, 4, 9, '#a5f3fc');
+          pxRect(waterX + 13, wy + 8, 4, 8, '#67e8f9');
+          pxRect(waterX + 7, wy + 17, 4, 4, '#e0f2fe');
+        }
+        if (d.state === 'FALL') {
+          pxRect(waterX + 5, Math.max(waterTop, d.y + 12), 8, 5, '#ffffff');
+        }
+      });
+
+      // 5. Draw Debris Warnings & Shaded Pixel Meteors
       debrisList.forEach((d) => {
         if (d.state === 'WARN') {
           const flash = Math.floor(Date.now() / 75) % 2 === 0;
@@ -1060,6 +1196,32 @@
         }
       });
 
+      // New boss projectiles: warning flashes first, then the hazard becomes active.
+      bossHazards.forEach((h) => {
+        const warning = h.state === 'WARN';
+        const pulse = Math.floor(Date.now() / 85) % 2 === 0;
+        if (h.type === 'SHOCKWAVE') {
+          if (warning) {
+            pxRect(0, BASE_GROUND_Y - 8, canvas.width, 5, pulse ? '#facc15' : '#fb7185');
+            ctx.font = 'bold 12px "Courier New", monospace'; ctx.textAlign = 'center';
+            ctx.fillStyle = '#ffffff'; ctx.fillText('JUMP THE SHOCKWAVE!', 450, BASE_GROUND_Y - 18);
+          } else {
+            pxRect(h.x, h.y + 8, h.w, h.h - 8, '#090d16');
+            pxRect(h.x + 5, h.y, h.w - 10, h.h, '#fb923c');
+            pxRect(h.x + 12, h.y - 8, h.w - 24, 8, '#fef08a');
+          }
+        } else {
+          if (warning) {
+            pxRect(h.x - 8, h.y - 8, h.w + 16, h.h + 16, pulse ? 'rgba(250,204,21,.35)' : 'rgba(244,63,94,.25)');
+          }
+          pxRect(h.x, h.y, h.w, h.h, '#090d16');
+          pxRect(h.x + 4, h.y + 4, h.w - 8, h.h - 8, warning ? '#facc15' : '#a855f7');
+          pxRect(h.x + 11, h.y + 9, 7, 6, '#ffffff');
+          pxRect(h.x + 24, h.y + 9, 7, 6, '#ffffff');
+          if (!warning) pxRect(h.x - 10, h.y + 12, 10, 6, '#c084fc');
+        }
+      });
+
       // 7. Square Pixel Particles & Floating Score Popups
       particles.forEach((p) => {
         pxRect(p.x - 1, p.y - 1, p.size + 2, p.size + 2, '#090d16');
@@ -1087,10 +1249,19 @@
       }
 
       // 10. Overlays
+      if (gameState === 'PLAYING' && furyBannerTimer > 0) {
+        const pulse = Math.floor(Date.now() / 100) % 2 === 0;
+        pxRect(225, 104, 450, 58, '#05070e');
+        pxRect(229, 108, 442, 50, pulse ? '#7f1d1d' : '#991b1b');
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#fef08a';
+        ctx.font = 'bold 25px "Courier New", monospace';
+        ctx.fillText('TITAN FURY MODE!', 450, 140);
+      }
       if (gameState === 'START') {
         drawOverlay(
           'SHARK PARKOUR: 16-BIT ESCAPE',
-          'Outrun the 4-step tracking laser & dodge meteors!',
+          'Reach 1,000 points to unleash TITAN FURY mode!',
           'PRESS SPACE TO START'
         );
       } else if (gameState === 'GAMEOVER') {
@@ -1122,7 +1293,7 @@
             const drawW = Math.min(tileSize, sw - bx);
             const drawH = Math.min(tileSize, sh - by);
 
-            pxRect(sx + bx, sy + by, drawW, drawH, isLight ? '#b45309' : '#451a03');
+            pxRect(sx + bx, sy + by, drawW, drawH, isLight ? currentStage().tile : currentStage().tileDark);
             if (isLight && drawW > 6 && drawH > 6) {
               pxRect(sx + bx, sy + by, drawW, 3, '#d97706');
               pxRect(sx + bx, sy + by, 3, drawH, '#d97706');
@@ -1130,12 +1301,12 @@
           }
         }
 
-        pxRect(sx, sy, sw, 12, '#15803d');
-        pxRect(sx, sy, sw, 6, '#22c55e');
-        pxRect(sx, sy, sw, 3, '#86efac');
+        pxRect(sx, sy, sw, 12, currentStage().top);
+        pxRect(sx, sy, sw, 6, currentStage().topLight);
+        pxRect(sx, sy, sw, 3, currentStage().wave);
 
         for (let gx = 0; gx < sw - 6; gx += 12) {
-          pxRect(sx + gx, sy + 12, 6, 3, '#14532d');
+          pxRect(sx + gx, sy + 12, 6, 3, currentStage().tileDark);
         }
       });
     }
@@ -1238,129 +1409,113 @@
       });
     }
 
+
     // ==========================================
-    // 16-BIT QUADRUPED SONIC-STYLE SHARK SPRITE
+    // UPGRADED 16-BIT ARMORED REEF SHARK SPRITE
     // ==========================================
     function drawQuadrupedShark16Bit() {
-      if (player.invulnTimer > 0 && Math.floor(player.invulnTimer * 16) % 2 === 0) {
-        return;
-      }
+      if (player.invulnTimer > 0 && Math.floor(player.invulnTimer * 16) % 2 === 0) return;
 
       const cx = Math.round(player.x + player.w / 2);
       const cy = Math.round(player.y + player.h / 2);
+      const swimming = !player.isGrounded && !player.isSliding;
+      const stride = Math.sin(player.runCycle);
+      const bob = Math.round(Math.abs(stride) * -2);
+      const by = -17 + bob;
+      const tailWag = Math.round(Math.sin(player.runCycle * 1.25) * 5);
+      const finPulse = Math.floor(Date.now() / 130) % 2;
 
       ctx.save();
       ctx.translate(cx, cy);
       ctx.scale(player.facing, 1);
 
-      if (!player.isGrounded && !player.isSliding) {
-        ctx.rotate(player.spinAngle);
-        pxRect(-21, -21, 42, 42, '#05070e');
-        pxRect(-18, -18, 36, 36, '#0284c7');
-        pxRect(-21, -12, 42, 24, '#38bdf8');
-        pxRect(-12, -21, 24, 42, '#38bdf8');
-        pxRect(-24, -6, 6, 12, '#0369a1');
-        pxRect(18, -6, 6, 12, '#0369a1');
-        pxRect(-10, -10, 20, 20, '#e0f2fe');
-        pxRect(-7, -3, 14, 6, '#ef4444');
-        ctx.restore();
-        return;
-      }
+      if (swimming) ctx.rotate(player.spinAngle * 0.35);
 
+      // Tail and tail flukes
+      pxRect(-35, by + 1 + tailWag, 15, 9, '#082f49');
+      pxRect(-42, by - 5 + tailWag, 10, 10, '#075985');
+      pxRect(-42, by + 7 + tailWag, 10, 10, '#075985');
+      pxRect(-40, by - 3 + tailWag, 7, 6, '#38bdf8');
+      pxRect(-40, by + 9 + tailWag, 7, 6, '#38bdf8');
+
+      // Rear legs / flippers
+      const rearLeg = Math.round(stride * 5);
+      const frontLeg = Math.round(-stride * 5);
+      pxRect(-23 + rearLeg, by + 20, 9, 13, '#082f49');
+      pxRect(-22 + rearLeg, by + 22, 7, 10, '#0e7490');
+      pxRect(11 + frontLeg, by + 20, 9, 13, '#082f49');
+      pxRect(12 + frontLeg, by + 22, 7, 10, '#0e7490');
+
+      // Main armored body silhouette
+      pxRect(-29, by - 1, 57, 28, '#020617');
+      pxRect(-26, by + 2, 52, 22, '#075985');
+      pxRect(-23, by + 3, 45, 17, '#0284c7');
+      pxRect(-20, by + 4, 38, 5, '#7dd3fc');
+
+      // Pale underside and segmented gills
+      pxRect(-17, by + 18, 43, 6, '#e0f2fe');
+      pxRect(0, by + 13, 3, 7, '#bae6fd');
+      pxRect(5, by + 13, 3, 7, '#bae6fd');
+      pxRect(10, by + 13, 3, 7, '#bae6fd');
+
+      // Dorsal fin with bright edge
+      pxRect(-5, by - 12, 8, 11, '#082f49');
+      pxRect(-2, by - 17, 7, 7, '#082f49');
+      pxRect(1, by - 14, 4, 10, '#0e7490');
+      pxRect(-5, by - 4, 12, 3, '#7dd3fc');
+
+      // Side pectoral fin
+      pxRect(-3, by + 10, 19, 6, '#082f49');
+      pxRect(1, by + 12, 16, 5, '#0e7490');
+      pxRect(8, by + 14, 10, 3, '#38bdf8');
+
+      // Head, tapered snout, and jaw
+      pxRect(19, by + 1, 18, 20, '#020617');
+      pxRect(23, by + 3, 18, 15, '#075985');
+      pxRect(29, by + 5, 17, 10, '#0284c7');
+      pxRect(40, by + 7, 11, 7, '#38bdf8');
+      pxRect(25, by + 15, 21, 5, '#e0f2fe');
+      pxRect(37, by + 16, 10, 3, '#f8fafc');
+
+      // Teeth
+      pxRect(34, by + 15, 3, 4, '#ffffff');
+      pxRect(40, by + 15, 3, 4, '#ffffff');
+      pxRect(46, by + 13, 3, 3, '#ffffff');
+
+      // Eye and brow
+      pxRect(29, by + 4, 8, 7, '#082f49');
+      pxRect(31, by + 5, 5, 5, '#f8fafc');
+      pxRect(34, by + 6, 2, 3, '#020617');
+      pxRect(28, by + 2, 10, 2, '#7dd3fc');
+
+      // Electric-blue armor markings
+      pxRect(-17, by + 7, 4, 8, '#7dd3fc');
+      pxRect(-10, by + 8, 3, 7, '#38bdf8');
+      pxRect(-3, by + 8, 3, 7, '#38bdf8');
+
+      // Small scarlet gill accent
+      pxRect(14, by + 7, 3, 9, '#fb7185');
+      pxRect(18, by + 8, 2, 7, '#fb7185');
+
+      // Sliding pose: lower, streamlined silhouette and speed streak
       if (player.isSliding) {
-        const sy = -11;
-        pxRect(-27, sy - 3, 54, 24, '#05070e');
-        pxRect(24, sy + 3, 18, 15, '#05070e');
-
-        pxRect(-34, sy + 2, 10, 14, '#0284c7');
-        pxRect(-40, sy - 1, 7, 7, '#38bdf8');
-        pxRect(-40, sy + 12, 7, 7, '#38bdf8');
-
-        pxRect(-10, sy - 8, 16, 8, '#0369a1');
-        pxRect(-16, sy - 11, 10, 4, '#0284c7');
-
-        pxRect(-24, sy, 48, 18, '#38bdf8');
-        pxRect(-24, sy, 48, 4, '#7dd3fc');
-        pxRect(24, sy + 6, 12, 9, '#38bdf8');
-        pxRect(36, sy + 9, 6, 6, '#38bdf8');
-
-        pxRect(-18, sy + 12, 48, 6, '#f0f9ff');
-
-        pxRect(6, sy, 15, 4, '#ef4444');
-        const wave = Math.floor(Date.now() / 80) % 2 === 0 ? -3 : 0;
-        pxRect(-12, sy - 2 + wave, 18, 3, '#ef4444');
-
-        pxRect(15, sy + 4, 6, 5, '#05070e');
-        pxRect(18, sy + 4, 3, 3, '#ffffff');
-
-        pxRect(24, 9, 9, 3, '#facc15');
-        pxRect(-12, 9, 9, 3, '#38bdf8');
-
-        ctx.restore();
-        return;
+        pxRect(-31, by + 25, 78, 3, '#38bdf8');
+        pxRect(-24, by + 29, 62, 2, '#7dd3fc');
+      } else {
+        // Feet and claws
+        pxRect(-24 + rearLeg, by + 30, 12, 5, '#020617');
+        pxRect(-22 + rearLeg, by + 31, 9, 3, '#38bdf8');
+        pxRect(10 + frontLeg, by + 30, 13, 5, '#020617');
+        pxRect(12 + frontLeg, by + 31, 9, 3, '#38bdf8');
+        pxRect(-17 + rearLeg, by + 32, 2, 3, '#e0f2fe');
+        pxRect(17 + frontLeg, by + 32, 2, 3, '#e0f2fe');
       }
 
-      const stride = Math.sin(player.runCycle);
-      const stride2 = Math.cos(player.runCycle);
-      const bob = Math.round(Math.abs(stride) * -3);
-      const by = -18 + bob;
-
-      const backLegX = Math.round(stride * 9);
-      const frontBackLegX = Math.round(-stride * 9);
-      pxRect(-21 + backLegX, by + 24, 9, 12, '#0369a1');
-      pxRect(9 + frontBackLegX, by + 24, 9, 12, '#0369a1');
-
-      const tailWag = Math.round(stride2 * 4);
-      pxRect(-35, by + 7 + tailWag, 14, 13, '#05070e');
-      pxRect(-33, by + 9 + tailWag, 12, 9, '#0284c7');
-      pxRect(-42, by + 3 + tailWag, 9, 9, '#38bdf8');
-      pxRect(-42, by + 15 + tailWag, 9, 9, '#38bdf8');
-
-      pxRect(-11, by - 11, 18, 11, '#05070e');
-      pxRect(-9, by - 9, 15, 9, '#0284c7');
-      pxRect(-15, by - 15, 12, 6, '#0369a1');
-      pxRect(-18, by - 18, 6, 3, '#7dd3fc');
-
-      pxRect(-26, by + 1, 49, 25, '#05070e');
-      pxRect(13, by - 2, 22, 25, '#05070e');
-      pxRect(31, by + 4, 16, 16, '#05070e');
-
-      pxRect(-24, by + 3, 45, 21, '#38bdf8');
-      pxRect(-24, by + 3, 45, 4, '#7dd3fc');
-      pxRect(15, by, 18, 21, '#38bdf8');
-      pxRect(33, by + 6, 12, 12, '#38bdf8');
-      pxRect(45, by + 9, 6, 6, '#38bdf8');
-
-      pxRect(-18, by + 18, 45, 6, '#f0f9ff');
-      pxRect(24, by + 15, 18, 6, '#f0f9ff');
-
-      pxRect(6, by + 9, 3, 9, '#0369a1');
-      pxRect(11, by + 9, 3, 9, '#0369a1');
-
-      pxRect(27, by + 13, 3, 3, '#ffffff');
-      pxRect(33, by + 13, 3, 3, '#ffffff');
-      pxRect(39, by + 13, 3, 3, '#ffffff');
-
-      pxRect(15, by + 1, 18, 4, '#ef4444');
-      const flap = Math.floor(Date.now() / 75) % 2 === 0 ? -3 : 2;
-      pxRect(-3, by - 2 + flap, 18, 3, '#ef4444');
-      pxRect(-9, by + 2 - flap, 15, 3, '#dc2626');
-
-      pxRect(24, by + 4, 6, 6, '#05070e');
-      pxRect(27, by + 4, 3, 3, '#ffffff');
-
-      const rearPawX = Math.round(-stride * 10);
-      const frontPawX = Math.round(stride * 10);
-
-      pxRect(-22 + rearPawX, by + 21, 12, 13, '#05070e');
-      pxRect(-21 + rearPawX, by + 22, 10, 11, '#38bdf8');
-      pxRect(-21 + rearPawX, by + 32, 12, 4, '#ef4444');
-      pxRect(-15 + rearPawX, by + 32, 6, 4, '#ffffff');
-
-      pxRect(10 + frontPawX, by + 21, 12, 13, '#05070e');
-      pxRect(11 + frontPawX, by + 22, 10, 11, '#38bdf8');
-      pxRect(11 + frontPawX, by + 32, 12, 4, '#ef4444');
-      pxRect(17 + frontPawX, by + 32, 6, 4, '#ffffff');
+      // Water sparkle when airborne
+      if (swimming && finPulse === 0) {
+        pxRect(-7, by - 22, 3, 3, '#bae6fd');
+        pxRect(5, by - 25, 2, 2, '#38bdf8');
+      }
 
       ctx.restore();
     }
@@ -1392,6 +1547,22 @@
       ctx.fillStyle = '#7dd3fc';
       ctx.font = 'bold 14px "Courier New", monospace';
       ctx.fillText(`BEST  ${String(highScore).padStart(5, '0')}`, canvas.width - 26, 58);
+
+      pxRect(350, 14, 200, 27, '#05070e');
+      pxRect(352, 16, 196, 23, '#1e293b');
+      ctx.textAlign = 'center';
+      ctx.fillStyle = currentStage().wave;
+      ctx.font = 'bold 13px "Courier New", monospace';
+      ctx.fillText(`ZONE ${currentStageNumber() + 1}: ${currentStage().name}`, 450, 32);
+      if (titanFuryMode) {
+        ctx.fillStyle = '#fb7185';
+        ctx.font = 'bold 12px "Courier New", monospace';
+        ctx.fillText('MODE: TITAN FURY', 450, 57);
+      } else {
+        ctx.fillStyle = '#86efac';
+        ctx.font = 'bold 11px "Courier New", monospace';
+        ctx.fillText('MODE: ESCAPE', 450, 57);
+      }
     }
 
     function drawOverlay(title, subtitle, actionText) {
@@ -1432,14 +1603,14 @@
   </script>
 
   <script>
-    (function () {
-      const script = document.createElement("script");
-      script.src =
-        "https://dim1024.github.io/vex-game-adapter/vex-controller.js?v=&quot; +
-        Date.now();
-      document.body.appendChild(script);
-    })();
-    </script>
+  (function () {
+    const script = document.createElement("script");
+    script.src =
+      "https://dim1024.github.io/VexIQ-Adapter/vex-controller.js?v=" +
+      Date.now();
+    document.body.appendChild(script);
+  })();
+  </script>
   
 </body>
 </html>
