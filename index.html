@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="build" content="2026-11-17.2-shark-upgrade" />
+  <meta name="build" content="2026-11-19.4-stage-campaign" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
@@ -242,6 +242,15 @@
 
     // Game State
     let gameState = 'START';
+    // Four finite stages, each with its own boss encounter and a final victory.
+    const STAGE_TARGET = 350; // progress earned from survival, not score bonuses
+    const BOSS_NAMES = ['HARBOR SENTINEL', 'CORAL WARDEN', 'MAGMA COLOSSUS', 'ABYSSAL TITAN'];
+    let stageIndex = 0, stageProgress = 0;
+    let bossActive = false, bossHP = 0, bossMaxHP = 0;
+    let bossWeakTimer = 0, bossWeakCooldown = 0, bossAttacksToWeak = 0;
+    let stageBannerTimer = 0, transitionTimer = 0;
+    let campaignTime = 0;
+    const core = {x: 574, y: 250, w: 44, h: 46};
     let score = 0;
     let highScore = 0;
     try {
@@ -318,8 +327,8 @@
       { name: 'VOLCANIC TRENCH', sky: ['#180b16','#35101b','#57151b','#7c2418','#a33a16','#c45a1a','#e07824','#f59e0b'], water: '#7f1d1d', wave: '#fb923c', tile: '#78350f', tileDark: '#431407', top: '#9a3412', topLight: '#ea580c', accent: '#facc15' },
       { name: 'FROSTBYTE REEF', sky: ['#071426','#0c2344','#123b68','#1d5b89','#367fa8','#62a5c7','#9ac8dc','#d2eaf2'], water: '#0369a1', wave: '#bae6fd', tile: '#475569', tileDark: '#1e293b', top: '#0e7490', topLight: '#22d3ee', accent: '#e0f2fe' }
     ];
-    function currentStage() { return STAGES[Math.floor(score / 600) % STAGES.length]; }
-    function currentStageNumber() { return Math.floor(score / 600) % STAGES.length; }
+    function currentStage() { return STAGES[stageIndex]; }
+    function currentStageNumber() { return stageIndex; }
 
     // Input Tracking
     const keys = {};
@@ -340,6 +349,17 @@
       }
     });
 
+    window.addEventListener('blur', () => {
+      Object.keys(keys).forEach(code => { keys[code] = false; });
+      stopSlide();
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        Object.keys(keys).forEach(code => { keys[code] = false; });
+        stopSlide();
+      }
+    });
+
     function handleKeyPress(code) {
       SFX.init();
       if (code === 'KeyM') {
@@ -351,7 +371,7 @@
         return;
       }
 
-      if (gameState === 'START' || gameState === 'GAMEOVER') {
+      if (gameState === 'START' || gameState === 'GAMEOVER' || gameState === 'VICTORY') {
         if (code === 'Space' || code === 'Enter') {
           startGame();
         }
@@ -428,6 +448,15 @@
     function startGame() {
       gameState = 'PLAYING';
       score = 0;
+      stageIndex = 0;
+      stageProgress = 0;
+      campaignTime = 0;
+      bossActive = false;
+      bossHP = bossMaxHP = 0;
+      bossWeakTimer = bossWeakCooldown = bossAttacksToWeak = 0;
+      transitionTimer = 0;
+      stageBannerTimer = 3.4;
+      worldScroll = 0;
       speedMultiplier = 1;
       screenShake = 0;
       hitStopTimer = 0;
@@ -500,7 +529,15 @@
     // TITAN ATTACK PATTERNS
     // ==========================================
     function spawnTitanAttack() {
-      const attack = ['DEBRIS', 'LASER', 'SHOCKWAVE', 'DRONE'][attackCycle % 4];
+      // Each boss introduces a different attack combination, with all four in stage 4.
+      const patterns = [
+        ['DEBRIS', 'SHOCKWAVE'],
+        ['DRONE', 'DEBRIS', 'SHOCKWAVE'],
+        ['LASER', 'SHOCKWAVE', 'DEBRIS'],
+        ['DEBRIS', 'LASER', 'SHOCKWAVE', 'DRONE']
+      ];
+      const set = patterns[stageIndex];
+      const attack = set[attackCycle % set.length];
       attackCycle++;
       titan.lastAttackType = attack;
       if (attack === 'DEBRIS') {
@@ -525,6 +562,81 @@
         titan.attackCooldown = Math.max(2.3, 3.2 / speedMultiplier);
       }
       if (titanFuryMode) titan.attackCooldown *= 0.68;
+      if (bossActive && bossWeakTimer <= 0 && bossWeakCooldown <= 0) {
+        bossAttacksToWeak++;
+        if (bossAttacksToWeak >= (stageIndex === 3 ? 2 : 1)) {
+          bossWeakTimer = 5.5;
+          bossAttacksToWeak = 0;
+          floatingTexts.push({x: 560, y: 205, text: 'CORE EXPOSED! JUMP!', life: 1.4});
+          SFX.dodgeBonus();
+        }
+      }
+    }
+
+    function beginBoss() {
+      bossActive = true;
+      bossMaxHP = stageIndex < 2 ? 2 : 3;
+      bossHP = bossMaxHP;
+      bossWeakTimer = 0;
+      bossWeakCooldown = 0;
+      bossAttacksToWeak = 0;
+      titan.attackCooldown = 1.15;
+      attackCycle = 0;
+      stageBannerTimer = 3.2;
+      floatingTexts.push({x: 450, y: 145, text: 'BOSS INCOMING!', life: 1.8});
+    }
+
+    function hitBossCore() {
+      if (!bossActive || bossWeakTimer <= 0 || bossWeakCooldown > 0 || player.isGrounded) return;
+      const overlaps = player.x + player.w > core.x && player.x < core.x + core.w &&
+        player.y + player.h > core.y && player.y < core.y + core.h;
+      if (!overlaps) return;
+      bossHP--;
+      bossWeakTimer = 0;
+      bossWeakCooldown = 1.8;
+      bossAttacksToWeak = 0;
+      player.vy = -520; // bounce away from the energy core
+      player.jumpsLeft = 1;
+      player.invulnTimer = Math.max(player.invulnTimer, 0.6);
+      screenShake = 16;
+      addScoreBonus(200, core.x, core.y - 18, 'CORE HIT! +200');
+      spawnParticles(core.x + core.w/2, core.y + core.h/2, currentStage().accent, 32);
+      if (bossHP <= 0) {
+        bossActive = false;
+        debrisList = []; laserList = []; bossHazards = [];
+        SFX.dodgeBonus();
+        if (stageIndex === STAGES.length - 1) {
+          gameState = 'VICTORY';
+          if (Math.floor(score) > highScore) {
+            highScore = Math.floor(score);
+            try { localStorage.setItem('shark_parkour_16bit_hs', highScore); } catch(e) {}
+          }
+        } else {
+          gameState = 'TRANSITION';
+          transitionTimer = 3.2;
+        }
+      }
+    }
+
+    function nextStage() {
+      stageIndex++;
+      stageProgress = 0;
+      bossActive = false;
+      titanFuryMode = false;
+      bossWeakTimer = bossWeakCooldown = bossAttacksToWeak = 0;
+      attackCycle = 0;
+      titan.attackCooldown = 1.6;
+      stageBannerTimer = 3.3;
+      speedMultiplier = 1;
+      debrisList = []; laserList = []; bossHazards = [];
+      player.hp = Math.min(player.maxHp, player.hp + 1);
+      player.invulnTimer = 2;
+      player.y = 120; player.vy = 0; player.jumpsLeft = 2;
+      player.isSliding = false; player.h = player.standH;
+      player.inWater = false;
+      Object.keys(keys).forEach(code => {keys[code] = false;});
+      resetPlatforms();
+      gameState = 'PLAYING';
     }
 
     function spawnDebrisPattern() {
@@ -712,12 +824,25 @@
         if (ft.life <= 0) floatingTexts.splice(i, 1);
       }
 
+      if (gameState === 'TRANSITION') {
+        transitionTimer -= dt;
+        if (transitionTimer <= 0) nextStage();
+        return;
+      }
       if (gameState !== 'PLAYING') return;
+      campaignTime += dt;
+      stageBannerTimer = Math.max(0, stageBannerTimer - dt);
+      bossWeakTimer = Math.max(0, bossWeakTimer - dt);
+      bossWeakCooldown = Math.max(0, bossWeakCooldown - dt);
+      if (!bossActive) {
+        stageProgress += dt * 18;
+        if (stageProgress >= STAGE_TARGET) beginBoss();
+      }
 
       const scrollSpeed = 290 * speedMultiplier;
       score += dt * 18 * speedMultiplier;
-      speedMultiplier = 1 + Math.min(0.75, score / 1600);
-      if (!titanFuryMode && score >= 1000) {
+      speedMultiplier = 1 + Math.min(0.7, stageIndex * 0.12 + stageProgress / 1150);
+      if (!titanFuryMode && bossActive && stageIndex === 3 && bossHP <= 2) {
         titanFuryMode = true;
         furyBannerTimer = 3.2;
         titan.attackCooldown = Math.min(titan.attackCooldown, 0.65);
@@ -728,7 +853,7 @@
         SFX.laserFire();
       }
       if (furyBannerTimer > 0) furyBannerTimer = Math.max(0, furyBannerTimer - dt);
-      worldScroll += scrollSpeed * dt * (titanFuryMode ? 1.12 : 1);
+      worldScroll += scrollSpeed * dt;
 
 
       // Scroll Platforms & Generate New Sections
@@ -755,7 +880,6 @@
         player.facing = 1;
       } else {
         player.vx = 0;
-        player.facing = 1;
       }
 
       player.x += player.vx * dt;
@@ -802,7 +926,7 @@
       // Water currents beside falling debris automatically carry the shark upward.
       const wasInWater = player.inWater;
       player.inWater = debrisList.some((d) => {
-        if (!['WARN', 'FALL', 'IMPACT'].includes(d.state)) return false;
+        if (d.state !== 'FALL') return false;
         const waterX = d.x + (d.waterSide > 0 ? d.w + 5 : -23);
         const waterTop = 0;
         const waterBottom = BASE_GROUND_Y;
@@ -815,11 +939,15 @@
       // Vertical Gravity & One-Way Platform Landing
       const prevBottom = player.y + player.h;
       if (player.inWater) {
-        player.vy = Math.min(player.vy, -560);
+        player.vy = -460;
         player.isGrounded = false;
         if (player.isSliding) stopSlide();
         if (wasInWater !== true) {
-          addScoreBonus(25, player.x + player.w / 2, player.y - 10, 'WATER BOOST!');
+          const usedColumn = debrisList.find(d => d.state === 'FALL' && player.x + player.w > d.x + (d.waterSide > 0 ? d.w + 5 : -23) && player.x < d.x + (d.waterSide > 0 ? d.w + 5 : -23) + 18);
+          if (usedColumn && !usedColumn.waterScored) {
+            usedColumn.waterScored = true;
+            addScoreBonus(25, player.x + player.w / 2, player.y - 10, 'WATER BOOST!');
+          }
           spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#67e8f9', 8);
         }
         player.waterBubbleTimer -= dt;
@@ -839,6 +967,8 @@
         player.vy += GRAVITY * dt;
       }
       player.y += player.vy * dt;
+      player.y = Math.max(16, player.y);
+      if (player.y === 16 && player.vy < 0) player.vy = 0;
       player.isGrounded = false;
 
       if (player.vy >= 0) {
@@ -874,6 +1004,10 @@
       } else {
         player.spinAngle = 0;
       }
+
+      // Reach the exposed core with an airborne spin jump to damage the boss.
+      hitBossCore();
+      if (gameState !== 'PLAYING') return;
 
       // Titan Attack Timer
       titan.attackCooldown -= dt;
@@ -944,12 +1078,15 @@
           }
         } else {
           h.x -= h.speed * dt;
-          if (h.type === 'DRONE') h.y += Math.sin(Date.now() * 0.006 + i) * 18 * dt;
+          if (h.type === 'DRONE') h.y += Math.sin(titan.eyePulse * 1.2 + i) * 18 * dt;
           const overlap = player.x + player.w - 7 > h.x && player.x + 7 < h.x + h.w &&
             player.y + player.h - 4 > h.y && player.y + 4 < h.y + h.h;
-          if (overlap) damagePlayer();
+          if (overlap) {
+            h.hitPlayer = true;
+            damagePlayer();
+          }
           if (h.x + h.w < -20) {
-            if (h.type === 'SHOCKWAVE' && player.invulnTimer <= 0) addScoreBonus(75, player.x + 20, player.y - 14, '+75 JUMPED!');
+            if (h.type === 'SHOCKWAVE' && !h.hitPlayer && player.invulnTimer <= 0) addScoreBonus(75, player.x + 20, player.y - 14, '+75 JUMPED!');
             bossHazards.splice(i, 1);
           }
         }
@@ -1021,11 +1158,8 @@
     function draw() {
       ctx.save();
 
-      if (screenShake > 0) {
-        const sx = Math.round((Math.random() - 0.5) * screenShake);
-        const sy = Math.round((Math.random() - 0.5) * screenShake);
-        ctx.translate(sx, sy);
-      }
+      // Keep the parallax background anchored to the screen during impact shake.
+      // Shake the foreground only (boss, platforms, hazards, player).
 
       // 1. 16-Bit Segmented Twilight-to-Sunset Sky
       const stage = currentStage();
@@ -1060,26 +1194,36 @@
         pxRect(cx + 9, cy + 21, 66, 6, '#93c5fd');
       }
 
-      // Distant Cyberpunk Silhouette Towers
-      for (let m = -1; m < 9; m++) {
-        const mx = Math.round(m * 132 - (worldScroll * 0.28) % 132);
-        const mh = 96 + ((m * 53) % 84);
+      // Distant skyline: stable world-space tile IDs. Each building keeps its
+      // height, windows, and lights as it moves across repeat boundaries.
+      const towerPitch = 132;
+      const towerOffset = worldScroll * 0.28;
+      const firstTower = Math.floor(towerOffset / towerPitch) - 1;
+      const lastTower = firstTower + Math.ceil(canvas.width / towerPitch) + 3;
+      for (let id = firstTower; id <= lastTower; id++) {
+        const mx = Math.round(id * towerPitch - towerOffset);
+        const hash = (n) => {
+          const x = Math.sin(n * 127.1 + 78.233) * 43758.5453;
+          return x - Math.floor(x);
+        };
+        const mh = 94 + Math.floor(hash(id) * 85);
         const topY = BASE_GROUND_Y - mh;
-
         pxRect(mx, topY, 96, mh, currentStageNumber() === 2 ? '#431407' : currentStageNumber() === 3 ? '#334155' : '#0f172a');
         pxRect(mx, topY, 4, mh, stage.accent);
         pxRect(mx, topY, 96, 6, stage.accent);
-
         pxRect(mx + 45, topY - 18, 4, 18, '#475569');
-        if (Math.floor(Date.now() / 300 + m) % 2 === 0) {
-          pxRect(mx + 44, topY - 22, 6, 4, '#f43f5e');
-        }
-
-        for (let wy = topY + 18; wy < BASE_GROUND_Y - 40; wy += 18) {
-          pxRect(mx + 16, wy, 10, 8, (m + wy) % 3 === 0 ? '#facc15' : stage.accent);
+        if (Math.floor(titan.eyePulse * 1.7 + id) % 2 === 0) pxRect(mx + 44, topY - 22, 6, 4, '#f43f5e');
+        for (let wy = topY + 18, row = 0; wy < BASE_GROUND_Y - 40; wy += 18, row++) {
+          pxRect(mx + 16, wy, 10, 8, hash(id * 11 + row) < 0.4 ? '#facc15' : stage.accent);
           pxRect(mx + 42, wy, 10, 8, '#1e293b');
-          pxRect(mx + 68, wy, 10, 8, (m + wy) % 2 === 0 ? '#f43f5e' : stage.wave);
+          pxRect(mx + 68, wy, 10, 8, hash(id * 13 + row) < 0.4 ? '#f43f5e' : stage.wave);
         }
+      }
+
+      if (screenShake > 0) {
+        const sx = Math.round((Math.random() - 0.5) * screenShake);
+        const sy = Math.round((Math.random() - 0.5) * screenShake);
+        ctx.translate(sx, sy);
       }
 
       // 2. Giant 16-Bit Mecha-Titan Boss
@@ -1090,7 +1234,7 @@
 
       // 4. Cyan water columns trail beside every falling debris piece.
       debrisList.forEach((d) => {
-        if (!['WARN', 'FALL', 'IMPACT'].includes(d.state)) return;
+        if (d.state !== 'FALL') return;
         const waterX = Math.round(d.x + (d.waterSide > 0 ? d.w + 5 : -23));
         const waterTop = 0;
         const waterHeight = Math.max(0, BASE_GROUND_Y - waterTop);
@@ -1239,6 +1383,7 @@
 
       // 8. 16-Bit Arcade HUD
       drawHUD();
+      drawBossCore();
 
       // 9. Retro CRT Scanline Overlay
       if (crtEnabled) {
@@ -1258,11 +1403,30 @@
         ctx.font = 'bold 25px "Courier New", monospace';
         ctx.fillText('TITAN FURY MODE!', 450, 140);
       }
+      if (gameState === 'PLAYING' && stageBannerTimer > 0) {
+        ctx.textAlign = 'center';
+        pxRect(185, 77, 530, 34, '#05070e');
+        ctx.font = 'bold 17px "Courier New", monospace';
+        ctx.fillStyle = '#facc15';
+        ctx.fillText(bossActive ? `BOSS: ${BOSS_NAMES[stageIndex]}` : `LEVEL ${stageIndex+1} - ${currentStage().name}`, 450, 100);
+      }
       if (gameState === 'START') {
         drawOverlay(
-          'SHARK PARKOUR: 16-BIT ESCAPE',
-          'Reach 1,000 points to unleash TITAN FURY mode!',
+          'SHARK PARKOUR: 4 LEVELS',
+          'Survive 4 zones. Jump into the exposed boss core!',
           'PRESS SPACE TO START'
+        );
+      } else if (gameState === 'TRANSITION') {
+        drawOverlay(
+          `LEVEL ${stageIndex+1} CLEARED!`,
+          `BOSS DEFEATED  |  +1 HP  |  SCORE ${Math.floor(score)}`,
+          `NEXT: ${STAGES[stageIndex+1].name}`
+        );
+      } else if (gameState === 'VICTORY') {
+        drawOverlay(
+          'VICTORY! ALL 4 LEVELS!',
+          `FINAL SCORE ${Math.floor(score)}  |  TIME ${Math.floor(campaignTime)}s  |  BEST ${highScore}`,
+          'PRESS SPACE TO PLAY AGAIN'
         );
       } else if (gameState === 'GAMEOVER') {
         drawOverlay(
@@ -1344,7 +1508,7 @@
       pxRect(tx + 52, ty - 94, 20, 26, '#64748b');
       pxRect(tx + 66, ty - 116, 20, 24, '#cbd5e1');
 
-      const visorCol = Math.floor(Date.now() / 110) % 2 === 0 ? '#f43f5e' : '#fb7185';
+      const visorCol = Math.floor(Date.now() / 110) % 2 === 0 ? currentStage().accent : '#fb7185';
       pxRect(tx - 46, ty - 45, 74, 20, '#05070e');
       pxRect(tx - 42, ty - 42, 66, 14, visorCol);
       const scanX = Math.round(Math.sin(Date.now() * 0.008) * 18);
@@ -1354,13 +1518,39 @@
       const cy = ty + 45;
       pxRect(cx - 28, cy - 28, 56, 56, '#05070e');
       pxRect(cx - 24, cy - 24, 48, 48, '#334155');
-      pxRect(cx - 18, cy - 18, 36, 36, titan.chargeLevel > 0.1 ? '#f43f5e' : '#881337');
+      pxRect(cx - 18, cy - 18, 36, 36, titan.chargeLevel > 0.1 ? currentStage().accent : '#881337');
 
       if (titan.chargeLevel > 0.15) {
         const inner = Math.round(12 + titan.chargeLevel * 20);
         pxRect(cx - inner / 2, cy - inner / 2, inner, inner, '#ffffff');
       }
 
+      // Distinctive silhouettes for the four encounters; keep the original Titan sprite.
+      const accent = currentStage().accent;
+      if (stageIndex === 0) { // Harbor Sentinel: antennae and neon beacon
+        pxRect(tx - 48, ty - 110, 8, 20, '#64748b');
+        pxRect(tx + 40, ty - 110, 8, 20, '#64748b');
+        pxRect(tx - 52, ty - 118, 16, 9, accent);
+        pxRect(tx + 36, ty - 118, 16, 9, accent);
+      } else if (stageIndex === 1) { // Coral Warden: bright branching fins
+        for (const side of [-1, 1]) {
+          const fx = tx + side * 85;
+          pxRect(fx - 8, ty - 76, 16, 42, '#0f766e');
+          pxRect(fx + side * 12 - 6, ty - 105, 12, 49, accent);
+          pxRect(fx + side * 22 - 5, ty - 120, 10, 27, '#f472b6');
+        }
+      } else if (stageIndex === 2) { // Magma Colossus: glowing horns
+        pxRect(tx - 68, ty - 115, 20, 31, '#9a3412');
+        pxRect(tx - 63, ty - 131, 11, 19, accent);
+        pxRect(tx + 48, ty - 115, 20, 31, '#9a3412');
+        pxRect(tx + 53, ty - 131, 11, 19, accent);
+      } else { // Abyssal Titan: lightning prongs
+        for (const side of [-1, 1]) {
+          pxRect(tx + side*73 - 5, ty - 135, 12, 49, '#334155');
+          pxRect(tx + side*73 - 7, ty - 143, 16, 16, accent);
+          pxRect(tx + side*73 - 3, ty - 156, 8, 15, '#ffffff');
+        }
+      }
       drawTitanHand16Bit(tx - 144, ty + 48, 'LEFT', hoverY);
       drawTitanHand16Bit(tx + 114, ty + 48, 'RIGHT', -hoverY);
     }
@@ -1411,112 +1601,149 @@
 
 
     // ==========================================
-    // UPGRADED 16-BIT ARMORED REEF SHARK SPRITE
+    // 16-BIT QUADRUPED SHARK SPRITE (STABLE HITBOX)
     // ==========================================
     function drawQuadrupedShark16Bit() {
-      if (player.invulnTimer > 0 && Math.floor(player.invulnTimer * 16) % 2 === 0) return;
+      if (player.invulnTimer > 0 && Math.floor(player.invulnTimer * 16) % 2 === 0) {
+        return;
+      }
 
       const cx = Math.round(player.x + player.w / 2);
       const cy = Math.round(player.y + player.h / 2);
-      const swimming = !player.isGrounded && !player.isSliding;
-      const stride = Math.sin(player.runCycle);
-      const bob = Math.round(Math.abs(stride) * -2);
-      const by = -17 + bob;
-      const tailWag = Math.round(Math.sin(player.runCycle * 1.25) * 5);
-      const finPulse = Math.floor(Date.now() / 130) % 2;
 
       ctx.save();
       ctx.translate(cx, cy);
       ctx.scale(player.facing, 1);
 
-      if (swimming) ctx.rotate(player.spinAngle * 0.35);
+      if (!player.isGrounded && !player.isSliding) {
+        ctx.rotate(player.spinAngle);
+        pxRect(-21, -21, 42, 42, '#05070e');
+        pxRect(-18, -18, 36, 36, '#0284c7');
+        pxRect(-21, -12, 42, 24, '#38bdf8');
+        pxRect(-12, -21, 24, 42, '#38bdf8');
+        pxRect(-24, -6, 6, 12, '#0369a1');
+        pxRect(18, -6, 6, 12, '#0369a1');
+        pxRect(-10, -10, 20, 20, '#e0f2fe');
+        pxRect(-7, -3, 14, 6, '#ef4444');
+        ctx.restore();
+        return;
+      }
 
-      // Tail and tail flukes
-      pxRect(-35, by + 1 + tailWag, 15, 9, '#082f49');
-      pxRect(-42, by - 5 + tailWag, 10, 10, '#075985');
-      pxRect(-42, by + 7 + tailWag, 10, 10, '#075985');
-      pxRect(-40, by - 3 + tailWag, 7, 6, '#38bdf8');
-      pxRect(-40, by + 9 + tailWag, 7, 6, '#38bdf8');
-
-      // Rear legs / flippers
-      const rearLeg = Math.round(stride * 5);
-      const frontLeg = Math.round(-stride * 5);
-      pxRect(-23 + rearLeg, by + 20, 9, 13, '#082f49');
-      pxRect(-22 + rearLeg, by + 22, 7, 10, '#0e7490');
-      pxRect(11 + frontLeg, by + 20, 9, 13, '#082f49');
-      pxRect(12 + frontLeg, by + 22, 7, 10, '#0e7490');
-
-      // Main armored body silhouette
-      pxRect(-29, by - 1, 57, 28, '#020617');
-      pxRect(-26, by + 2, 52, 22, '#075985');
-      pxRect(-23, by + 3, 45, 17, '#0284c7');
-      pxRect(-20, by + 4, 38, 5, '#7dd3fc');
-
-      // Pale underside and segmented gills
-      pxRect(-17, by + 18, 43, 6, '#e0f2fe');
-      pxRect(0, by + 13, 3, 7, '#bae6fd');
-      pxRect(5, by + 13, 3, 7, '#bae6fd');
-      pxRect(10, by + 13, 3, 7, '#bae6fd');
-
-      // Dorsal fin with bright edge
-      pxRect(-5, by - 12, 8, 11, '#082f49');
-      pxRect(-2, by - 17, 7, 7, '#082f49');
-      pxRect(1, by - 14, 4, 10, '#0e7490');
-      pxRect(-5, by - 4, 12, 3, '#7dd3fc');
-
-      // Side pectoral fin
-      pxRect(-3, by + 10, 19, 6, '#082f49');
-      pxRect(1, by + 12, 16, 5, '#0e7490');
-      pxRect(8, by + 14, 10, 3, '#38bdf8');
-
-      // Head, tapered snout, and jaw
-      pxRect(19, by + 1, 18, 20, '#020617');
-      pxRect(23, by + 3, 18, 15, '#075985');
-      pxRect(29, by + 5, 17, 10, '#0284c7');
-      pxRect(40, by + 7, 11, 7, '#38bdf8');
-      pxRect(25, by + 15, 21, 5, '#e0f2fe');
-      pxRect(37, by + 16, 10, 3, '#f8fafc');
-
-      // Teeth
-      pxRect(34, by + 15, 3, 4, '#ffffff');
-      pxRect(40, by + 15, 3, 4, '#ffffff');
-      pxRect(46, by + 13, 3, 3, '#ffffff');
-
-      // Eye and brow
-      pxRect(29, by + 4, 8, 7, '#082f49');
-      pxRect(31, by + 5, 5, 5, '#f8fafc');
-      pxRect(34, by + 6, 2, 3, '#020617');
-      pxRect(28, by + 2, 10, 2, '#7dd3fc');
-
-      // Electric-blue armor markings
-      pxRect(-17, by + 7, 4, 8, '#7dd3fc');
-      pxRect(-10, by + 8, 3, 7, '#38bdf8');
-      pxRect(-3, by + 8, 3, 7, '#38bdf8');
-
-      // Small scarlet gill accent
-      pxRect(14, by + 7, 3, 9, '#fb7185');
-      pxRect(18, by + 8, 2, 7, '#fb7185');
-
-      // Sliding pose: lower, streamlined silhouette and speed streak
       if (player.isSliding) {
-        pxRect(-31, by + 25, 78, 3, '#38bdf8');
-        pxRect(-24, by + 29, 62, 2, '#7dd3fc');
-      } else {
-        // Feet and claws
-        pxRect(-24 + rearLeg, by + 30, 12, 5, '#020617');
-        pxRect(-22 + rearLeg, by + 31, 9, 3, '#38bdf8');
-        pxRect(10 + frontLeg, by + 30, 13, 5, '#020617');
-        pxRect(12 + frontLeg, by + 31, 9, 3, '#38bdf8');
-        pxRect(-17 + rearLeg, by + 32, 2, 3, '#e0f2fe');
-        pxRect(17 + frontLeg, by + 32, 2, 3, '#e0f2fe');
+        const sy = -11;
+        pxRect(-27, sy - 3, 54, 24, '#05070e');
+        pxRect(24, sy + 3, 18, 15, '#05070e');
+
+        pxRect(-34, sy + 2, 10, 14, '#0284c7');
+        pxRect(-40, sy - 1, 7, 7, '#38bdf8');
+        pxRect(-40, sy + 12, 7, 7, '#38bdf8');
+
+        pxRect(-10, sy - 8, 16, 8, '#0369a1');
+        pxRect(-16, sy - 11, 10, 4, '#0284c7');
+
+        pxRect(-24, sy, 48, 18, '#38bdf8');
+        pxRect(-24, sy, 48, 4, '#7dd3fc');
+        pxRect(24, sy + 6, 12, 9, '#38bdf8');
+        pxRect(36, sy + 9, 6, 6, '#38bdf8');
+
+        pxRect(-18, sy + 12, 48, 6, '#f0f9ff');
+
+        pxRect(6, sy, 15, 4, '#ef4444');
+        const wave = Math.floor(Date.now() / 80) % 2 === 0 ? -3 : 0;
+        pxRect(-12, sy - 2 + wave, 18, 3, '#ef4444');
+
+        pxRect(15, sy + 4, 6, 5, '#05070e');
+        pxRect(18, sy + 4, 3, 3, '#ffffff');
+
+        pxRect(24, 9, 9, 3, '#facc15');
+        pxRect(-12, 9, 9, 3, '#38bdf8');
+
+        ctx.restore();
+        return;
       }
 
-      // Water sparkle when airborne
-      if (swimming && finPulse === 0) {
-        pxRect(-7, by - 22, 3, 3, '#bae6fd');
-        pxRect(5, by - 25, 2, 2, '#38bdf8');
-      }
+      const stride = Math.sin(player.runCycle);
+      const stride2 = Math.cos(player.runCycle);
+      const bob = Math.round(Math.abs(stride) * -3);
+      const by = -18 + bob;
 
+      const backLegX = Math.round(stride * 9);
+      const frontBackLegX = Math.round(-stride * 9);
+      pxRect(-21 + backLegX, by + 24, 9, 12, '#0369a1');
+      pxRect(9 + frontBackLegX, by + 24, 9, 12, '#0369a1');
+
+      const tailWag = Math.round(stride2 * 4);
+      pxRect(-35, by + 7 + tailWag, 14, 13, '#05070e');
+      pxRect(-33, by + 9 + tailWag, 12, 9, '#0284c7');
+      pxRect(-42, by + 3 + tailWag, 9, 9, '#38bdf8');
+      pxRect(-42, by + 15 + tailWag, 9, 9, '#38bdf8');
+
+      pxRect(-11, by - 11, 18, 11, '#05070e');
+      pxRect(-9, by - 9, 15, 9, '#0284c7');
+      pxRect(-15, by - 15, 12, 6, '#0369a1');
+      pxRect(-18, by - 18, 6, 3, '#7dd3fc');
+
+      pxRect(-26, by + 1, 49, 25, '#05070e');
+      pxRect(13, by - 2, 22, 25, '#05070e');
+      pxRect(31, by + 4, 16, 16, '#05070e');
+
+      pxRect(-24, by + 3, 45, 21, '#38bdf8');
+      pxRect(-24, by + 3, 45, 4, '#7dd3fc');
+      pxRect(15, by, 18, 21, '#38bdf8');
+      pxRect(33, by + 6, 12, 12, '#38bdf8');
+      pxRect(45, by + 9, 6, 6, '#38bdf8');
+
+      pxRect(-18, by + 18, 45, 6, '#f0f9ff');
+      pxRect(24, by + 15, 18, 6, '#f0f9ff');
+
+      pxRect(6, by + 9, 3, 9, '#0369a1');
+      pxRect(11, by + 9, 3, 9, '#0369a1');
+
+      pxRect(27, by + 13, 3, 3, '#ffffff');
+      pxRect(33, by + 13, 3, 3, '#ffffff');
+      pxRect(39, by + 13, 3, 3, '#ffffff');
+
+      pxRect(15, by + 1, 18, 4, '#ef4444');
+      const flap = Math.floor(Date.now() / 75) % 2 === 0 ? -3 : 2;
+      pxRect(-3, by - 2 + flap, 18, 3, '#ef4444');
+      pxRect(-9, by + 2 - flap, 15, 3, '#dc2626');
+
+      pxRect(24, by + 4, 6, 6, '#05070e');
+      pxRect(27, by + 4, 3, 3, '#ffffff');
+
+      const rearPawX = Math.round(-stride * 10);
+      const frontPawX = Math.round(stride * 10);
+
+      pxRect(-22 + rearPawX, by + 21, 12, 13, '#05070e');
+      pxRect(-21 + rearPawX, by + 22, 10, 11, '#38bdf8');
+      pxRect(-21 + rearPawX, by + 32, 12, 4, '#ef4444');
+      pxRect(-15 + rearPawX, by + 32, 6, 4, '#ffffff');
+
+      pxRect(10 + frontPawX, by + 21, 12, 13, '#05070e');
+      pxRect(11 + frontPawX, by + 22, 10, 11, '#38bdf8');
+      pxRect(11 + frontPawX, by + 32, 12, 4, '#ef4444');
+      pxRect(17 + frontPawX, by + 32, 6, 4, '#ffffff');
+
+      ctx.restore();
+    }
+
+    function drawBossCore() {
+      if (!bossActive || gameState !== 'PLAYING') return;
+      // Reachable from the last ground section with a normal or double spin-jump.
+      const c = currentStage().accent;
+      const active = bossWeakTimer > 0;
+      const pulse = Math.sin(performance.now() * 0.014) * 4;
+      ctx.save();
+      pxRect(core.x-6, core.y-6, core.w+12, core.h+12, '#05070e');
+      pxRect(core.x, core.y, core.w, core.h, active ? '#facc15' : '#475569');
+      pxRect(core.x+6, core.y+6, core.w-12, core.h-12, active ? '#ffffff' : c);
+      if (active) {
+        ctx.strokeStyle = '#fef08a'; ctx.lineWidth = 4;
+        ctx.strokeRect(core.x - 9 - pulse, core.y - 9 - pulse, core.w + 18 + pulse*2, core.h + 18 + pulse*2);
+      }
+      ctx.textAlign='center'; ctx.font='bold 12px "Courier New", monospace';
+      ctx.fillStyle = active ? '#fef08a' : '#cbd5e1';
+      ctx.fillText(active ? 'JUMP INTO CORE!' : 'DODGE TO EXPOSE CORE', 580, core.y - 17);
       ctx.restore();
     }
 
@@ -1553,15 +1780,18 @@
       ctx.textAlign = 'center';
       ctx.fillStyle = currentStage().wave;
       ctx.font = 'bold 13px "Courier New", monospace';
-      ctx.fillText(`ZONE ${currentStageNumber() + 1}: ${currentStage().name}`, 450, 32);
-      if (titanFuryMode) {
+      ctx.fillText(`LEVEL ${stageIndex + 1}/4: ${currentStage().name}`, 450, 32);
+      if (bossActive) {
+        ctx.fillStyle = '#facc15'; ctx.font = 'bold 12px "Courier New", monospace';
+        ctx.fillText(`BOSS HP: ${'■'.repeat(bossHP)}${'□'.repeat(bossMaxHP-bossHP)}`, 450, 57);
+      } else if (titanFuryMode) {
         ctx.fillStyle = '#fb7185';
         ctx.font = 'bold 12px "Courier New", monospace';
         ctx.fillText('MODE: TITAN FURY', 450, 57);
       } else {
         ctx.fillStyle = '#86efac';
         ctx.font = 'bold 11px "Courier New", monospace';
-        ctx.fillText('MODE: ESCAPE', 450, 57);
+        ctx.fillText(`ESCAPE ${Math.min(100, Math.floor(stageProgress/STAGE_TARGET*100))}%`, 450, 57);
       }
     }
 
@@ -1579,6 +1809,7 @@
 
       ctx.fillStyle = '#f8fafc';
       ctx.font = 'bold 17px "Courier New", monospace';
+      if (ctx.measureText(subtitle).width > 555) ctx.font = 'bold 13px "Courier New", monospace';
       ctx.fillText(subtitle, canvas.width / 2, 225);
 
       if (Math.floor(Date.now() / 350) % 2 === 0) {
@@ -1591,7 +1822,7 @@
     // Main Animation Loop
     let lastTime = performance.now();
     function loop(now) {
-      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      const dt = Math.max(0, Math.min(1 / 30, (now - lastTime) / 1000));
       lastTime = now;
 
       update(dt);
