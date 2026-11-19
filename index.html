@@ -1,1847 +1,711 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="build" content="2026-11-20.9-stage-campaign" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  <!-- Change the <meta name="build"> content to any new string on every deploy so bookmarked players auto-reload once. -->
-  <script>
-    (function () {
-      try {
-        if (window.location.protocol === 'file:') return;
-        var meta = document.querySelector('meta[name="build"]');
-        if (!meta) return;
-        var localBuild = meta.getAttribute('content');
-        if (!localBuild) return;
-
-        var cleanUrl = window.location.origin + window.location.pathname;
-        var checkUrl = cleanUrl + '?_v=' + Date.now();
-
-        fetch(checkUrl, { cache: 'no-store' })
-          .then(function (res) {
-            if (!res.ok) return null;
-            return res.text();
-          })
-          .then(function (html) {
-            if (!html) return;
-            var match = html.match(/<meta\s+name=["']build["']\s+content=["']([^"']+)["']/i);
-            if (!match || !match[1]) return;
-            var remoteBuild = match[1];
-            if (remoteBuild !== localBuild) {
-              var guardKey = 'gh_pages_reloaded_build';
-              if (sessionStorage.getItem(guardKey) === remoteBuild) return;
-              sessionStorage.setItem(guardKey, remoteBuild);
-              window.location.replace(cleanUrl + '?_v=' + Date.now());
-            }
-          })
-          .catch(function () {
-            // Ignore offline/network errors silently
-          });
-      } catch (e) {
-        // Ignore unexpected errors silently
-      }
-    })();
-  </script>
-  <title>Shark Parkour: 16-Bit Titan Escape</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      user-select: none;
-    }
-    body {
-      background: radial-gradient(circle at center, #131836 0%, #060811 100%);
-      color: #f8fafc;
-      font-family: 'Courier New', Courier, monospace;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      overflow: hidden;
-    }
-    #game-wrapper {
-      position: relative;
-      width: 900px;
-      max-width: 96vw;
-      border: 4px solid #facc15;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow:
-        0 0 0 4px #090d16,
-        0 0 35px rgba(56, 189, 248, 0.25),
-        0 24px 60px rgba(0, 0, 0, 0.9);
-      background: #0d1333;
-    }
-    canvas {
-      display: block;
-      width: 100%;
-      height: auto;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-    }
-    .controls-bar {
-      margin-top: 14px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      font-size: 13px;
-      color: #cbd5e1;
-    }
-    .key-badge {
-      background: #0f172a;
-      border: 1px solid #334155;
-      padding: 4px 10px;
-      border-radius: 4px;
-      box-shadow: inset 0 -2px 0 #020617;
-    }
-    .key-badge span {
-      color: #facc15;
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="build" content="2026-11-19.5">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<!-- IMPORTANT: change the <meta name="build"> content to any new string on every deploy so bookmarked players auto-reload once. -->
+<script>
+(function () {
+  try {
+    if (location.protocol === 'file:') return;
+    var meta = document.querySelector('meta[name="build"]');
+    var localBuild = meta && meta.getAttribute('content');
+    if (!localBuild || !window.fetch) return;
+    var cleanUrl = location.origin + location.pathname;
+    fetch(cleanUrl + '?_v=' + Date.now(), { cache: 'no-store' })
+      .then(function (res) { return res.ok ? res.text() : null; })
+      .then(function (html) {
+        if (!html) return;
+        var m = html.match(/<meta\s+name=["']build["']\s+content=["']([^"']+)["']/i);
+        if (!m || !m[1]) return;
+        var remoteBuild = m[1];
+        if (remoteBuild === localBuild) return;
+        var guardKey = 'gh_pages_reloaded_build';
+        try {
+          if (sessionStorage.getItem(guardKey) === remoteBuild) return;
+          sessionStorage.setItem(guardKey, remoteBuild);
+        } catch (e) { return; }
+        location.replace(cleanUrl + '?_v=' + Date.now());
+      })
+      .catch(function () { /* offline / CORS: ignore */ });
+  } catch (e) { /* never block the game */ }
+})();
+</script>
+<title>Shark Parkour: 16-Bit Titan Escape</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;user-select:none}
+body{background:radial-gradient(circle at center,#131836 0%,#060811 100%);color:#f8fafc;font-family:'Courier New',monospace;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;overflow:hidden}
+#game-wrapper{position:relative;width:900px;max-width:96vw;border:4px solid #facc15;border-radius:8px;overflow:hidden;box-shadow:0 0 0 4px #090d16,0 0 35px rgba(56,189,248,.25);background:#0d1333}
+canvas{display:block;width:100%;height:auto;image-rendering:pixelated}
+.controls-bar{margin-top:12px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;font-size:12px;color:#cbd5e1;max-width:96vw}
+.key-badge{background:#0f172a;border:1px solid #334155;padding:3px 8px;border-radius:4px}
+.key-badge span{color:#facc15;font-weight:bold}
+</style>
 </head>
 <body>
-  <div id="game-wrapper">
-    <canvas id="gameCanvas" width="900" height="450"></canvas>
-  </div>
-  <div class="controls-bar">
-    <div class="key-badge"><span>A / D</span> or <span>◀ / ▶</span> Move</div>
-    <div class="key-badge"><span>W / ▲ / SPACE</span> Spin-Jump (x2)</div>
-    <div class="key-badge"><span>S / ▼</span> Slide / Fast-Fall</div>
-    <div class="key-badge"><span>C</span> CRT Scanlines</div>
-    <div class="key-badge"><span>M</span> Mute Audio</div>
-  </div>
+<div id="game-wrapper"><canvas id="gameCanvas" width="900" height="450"></canvas></div>
+<div class="controls-bar">
+  <div class="key-badge"><span>A/D</span> Move</div>
+  <div class="key-badge"><span>W/SPACE</span> Jump x2</div>
+  <div class="key-badge"><span>S</span> Slide</div>
+  <div class="key-badge"><span>SHIFT / E</span> Water-Jet Dash</div>
+  <div class="key-badge"><span>C</span> CRT</div>
+  <div class="key-badge"><span>M</span> mute</div>
+</div>
+<script>
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+ctx.imageSmoothingEnabled=false;
+function pxRect(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(Math.round(x),Math.round(y),Math.round(w),Math.round(h));}
 
-  <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
+const SFX={ctx:null,muted:false,
+init(){if(!this.ctx){const A=window.AudioContext||window.webkitAudioContext;if(A)this.ctx=new A();}if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();},
+playTone(type,sf,ef,dur,vol=.14,delay=0){if(this.muted||!this.ctx)return;const now=this.ctx.currentTime+delay;const o=this.ctx.createOscillator(),g=this.ctx.createGain();o.type=type;o.frequency.setValueAtTime(sf,now);o.frequency.exponentialRampToValueAtTime(Math.max(20,ef),now+dur);g.gain.setValueAtTime(vol,now);g.gain.exponentialRampToValueAtTime(.001,now+dur);o.connect(g);g.connect(this.ctx.destination);o.start(now);o.stop(now+dur);},
+playNoise(dur,ff,ft='lowpass',vol=.18){if(this.muted||!this.ctx)return;const n=Math.floor(this.ctx.sampleRate*dur);const b=this.ctx.createBuffer(1,n,this.ctx.sampleRate);const d=b.getChannelData(0);for(let i=0;i<n;i++)d[i]=Math.random()*2-1;const s=this.ctx.createBufferSource();s.buffer=b;const f=this.ctx.createBiquadFilter();f.type=ft;f.frequency.setValueAtTime(ff,this.ctx.currentTime);const g=this.ctx.createGain();g.gain.setValueAtTime(vol,this.ctx.currentTime);g.gain.exponentialRampToValueAtTime(.001,this.ctx.currentTime+dur);s.connect(f);f.connect(g);g.connect(this.ctx.destination);s.start();},
+jump(){this.playTone('square',220,660,.16,.12);},
+doubleJump(){this.playTone('square',380,880,.14,.12);this.playTone('triangle',540,1080,.15,.12,.03);},
+slide(){this.playNoise(.2,1100,'bandpass',.15);this.playTone('triangle',240,100,.16,.08);},
+laserLock(s){const b=320+s*75;this.playTone('square',b,b*1.45,.11,.09);},
+laserFire(){this.playTone('sawtooth',940,130,.24,.16);this.playTone('square',480,75,.24,.12);this.playNoise(.18,1900,'bandpass',.14);},
+debrisImpact(){this.playTone('sine',130,32,.28,.24);this.playNoise(.24,420,'lowpass',.25);},
+dodgeBonus(){this.playTone('square',587,880,.09,.09);this.playTone('square',880,1174,.12,.09,.06);},
+hurt(){this.playTone('sawtooth',260,55,.35,.2);this.playTone('square',180,45,.35,.16,.04);},
+dash(){this.playNoise(.28,2400,'bandpass',.2);this.playTone('sine',180,900,.22,.14);this.playTone('triangle',360,1200,.18,.08,.02);}};
 
-    function pxRect(x, y, w, h, color) {
-      ctx.fillStyle = color;
-      ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+const BASE_GROUND_Y=384,GRAVITY=2150,JUMP_FORCE=-740,DOUBLE_JUMP_FORCE=-640,MOVE_SPEED=325;
+let gameState='START';
+const STAGE_TARGET=350;
+const BOSS_NAMES=['HARBOR SENTINEL','CORAL WARDEN','MAGMA COLOSSUS','ABYSSAL TITAN'];
+let stageIndex=0,stageProgress=0,bossActive=false,bossHP=0,bossMaxHP=0,bossWeakTimer=0,bossWeakCooldown=0,bossAttacksToWeak=0,stageBannerTimer=0,transitionTimer=0,campaignTime=0;
+const core={x:574,y:250,w:44,h:46};
+let score=0,highScore=0,speedMultiplier=1,screenShake=0,hitStopTimer=0,worldScroll=0,crtEnabled=true;
+const stars=Array.from({length:28},(_,i)=>({x:(i*137)%900,y:18+((i*73)%150),size:i%3===0?3:2,phase:i*.7}));
+const player={x:160,y:BASE_GROUND_Y-36,w:54,h:36,standH:36,slideH:22,vx:0,vy:0,facing:1,jumpsLeft:2,isGrounded:true,isSliding:false,invulnTimer:0,hp:10,maxHp:10,runCycle:0,spinAngle:0,inWater:false,waterBubbleTimer:0,afterImages:[],dashTimer:0,dashCooldown:0,dashIframes:0,dashDir:1};
+const DASH_TIME=.22,DASH_SPEED=1100,DASH_COOLDOWN=.9,DASH_IFRAMES=.37;
+let platforms=[],nextPlatformX=0;
+const titan={x:785,y:235,eyePulse:0,attackCooldown:1.5,lastAttackType:'',slamHand:'LEFT',slamState:'IDLE',slamTimer:0,chargeLevel:0};
+let debrisList=[],laserList=[],particles=[],floatingTexts=[],bossHazards=[],attackCycle=0,titanFuryMode=false,furyBannerTimer=0;
+
+const STAGES=[
+{name:'NEON HARBOR',sky:['#090d26','#101842','#1a2766','#25398c','#364fb3','#5b4b9e','#8c4378','#b84a54'],water:'#1d4ed8',wave:'#60a5fa',tile:'#b45309',tileDark:'#451a03',top:'#15803d',topLight:'#22c55e',accent:'#38bdf8'},
+{name:'CORAL CAVERNS',sky:['#071b2b','#0b3445','#10566a','#147d83','#219c91','#36a58a','#5a9c76','#8cb56b'],water:'#0e7490',wave:'#67e8f9',tile:'#9f1239',tileDark:'#4c0519',top:'#0f766e',topLight:'#2dd4bf',accent:'#f472b6'},
+{name:'VOLCANIC TRENCH',sky:['#180b16','#35101b','#57151b','#7c2418','#a33a16','#c45a1a','#e07824','#f59e0b'],water:'#7f1d1d',wave:'#fb923c',tile:'#78350f',tileDark:'#431407',top:'#9a3412',topLight:'#ea580c',accent:'#facc15'},
+{name:'FROSTBYTE REEF',sky:['#071426','#0c2344','#123b68','#1d5b89','#367fa8','#62a5c7','#9ac8dc','#d2eaf2'],water:'#0369a1',wave:'#bae6fd',tile:'#475569',tileDark:'#1e293b',top:'#0e7490',topLight:'#22d3ee',accent:'#e0f2fe'}];
+function currentStage(){return STAGES[stageIndex];}
+
+const keys={};
+window.addEventListener('keydown',e=>{
+  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyS','KeyA','KeyD'].includes(e.code))e.preventDefault();
+  if(!keys[e.code]){keys[e.code]=true;handleKeyPress(e.code);}
+});
+window.addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='ArrowDown'||e.code==='KeyS')stopSlide();});
+window.addEventListener('blur',()=>{Object.keys(keys).forEach(c=>keys[c]=false);stopSlide();});
+
+// Attack sets per level (new attacks added)
+const PATTERNS=[
+ ['DEBRIS','CRATE','DIVE','SHOCKWAVE','WRECKBALL'],
+ ['DRONE','URCHIN','DIVE','DEBRIS','JELLY'],
+ ['LASER','GEYSER','DIVE','SHOCKWAVE','FIREBALL'],
+ ['DEBRIS','LASER','DIVE','ICESPIKE','DRONE','GUST','DIVE','SHOCKWAVE']
+];
+
+function handleKeyPress(code){
+  SFX.init();
+  if(code==='KeyM'){SFX.muted=!SFX.muted;return;}
+  if(code==='KeyC'){crtEnabled=!crtEnabled;return;}
+  if(gameState==='START'||gameState==='GAMEOVER'||gameState==='VICTORY'){if(code==='Space'||code==='Enter')startGame(0);return;}
+  if(gameState==='PLAYING'){
+    if(code==='Space'||code==='ArrowUp'||code==='KeyW')jump();
+    if(code==='KeyE'||code==='ShiftLeft'||code==='ShiftRight'||code==='KeyK')dash();
+    if(code==='ArrowDown'||code==='KeyS')startSlide();
+  }
+}
+
+function resetPlatforms(){platforms=[{x:0,y:BASE_GROUND_Y,w:960,h:70,type:'GROUND'}];nextPlatformX=960;for(let i=0;i<4;i++)spawnNextPlatformSection();}
+function spawnNextPlatformSection(){
+  const p=Math.floor(Math.random()*4);
+  if(p===0){const fx=nextPlatformX+96,fw=420;platforms.push({x:fx,y:BASE_GROUND_Y,w:fw,h:70,type:'GROUND'});platforms.push({x:fx+90,y:BASE_GROUND_Y-96,w:192,h:24,type:'LEDGE'});nextPlatformX=fx+fw;}
+  else if(p===1){const s1=nextPlatformX+72;platforms.push({x:s1,y:BASE_GROUND_Y-48,w:168,h:24,type:'LEDGE'});const s2=s1+210;platforms.push({x:s2,y:BASE_GROUND_Y-114,w:192,h:24,type:'LEDGE'});const l=s2+220;platforms.push({x:l,y:BASE_GROUND_Y,w:320,h:70,type:'GROUND'});nextPlatformX=l+320;}
+  else if(p===2){const sx=nextPlatformX+48,w=480;platforms.push({x:sx,y:BASE_GROUND_Y,w:w,h:70,type:'GROUND'});platforms.push({x:sx+60,y:BASE_GROUND_Y-84,w:144,h:24,type:'LEDGE'});platforms.push({x:sx+250,y:BASE_GROUND_Y-144,w:168,h:24,type:'LEDGE'});nextPlatformX=sx+w;}
+  else{const p1=nextPlatformX+84;platforms.push({x:p1,y:BASE_GROUND_Y-24,w:168,h:94,type:'GROUND'});const p2=p1+168+90;platforms.push({x:p2,y:BASE_GROUND_Y,w:340,h:70,type:'GROUND'});nextPlatformX=p2+340;}
+}
+
+function startGame(level){
+  gameState='PLAYING';score=0;stageIndex=level||0;stageProgress=0;campaignTime=0;bossActive=false;bossHP=bossMaxHP=0;
+  bossWeakTimer=bossWeakCooldown=bossAttacksToWeak=0;transitionTimer=0;stageBannerTimer=3.4;worldScroll=0;speedMultiplier=1;screenShake=0;hitStopTimer=0;
+  player.x=160;player.y=BASE_GROUND_Y-player.standH;player.h=player.standH;player.vx=player.vy=0;player.facing=1;player.jumpsLeft=2;player.isGrounded=true;player.isSliding=false;player.invulnTimer=0;player.inWater=false;player.waterBubbleTimer=0;player.hp=player.maxHp;player.afterImages=[];player.dashTimer=player.dashCooldown=player.dashIframes=0;player.dashDir=1;
+  resetPlatforms();debrisList=[];laserList=[];bossHazards=[];attackCycle=0;titanFuryMode=false;furyBannerTimer=0;particles=[];floatingTexts=[];
+  titan.attackCooldown=1.3;titan.slamState='IDLE';titan.chargeLevel=0;titan.lastAttackType='';
+}
+function jump(){if(player.jumpsLeft>0){if(player.jumpsLeft===2)SFX.jump();else SFX.doubleJump();stopSlide();player.vy=player.jumpsLeft===2?JUMP_FORCE:DOUBLE_JUMP_FORCE;player.jumpsLeft--;player.isGrounded=false;spawnParticles(player.x+player.w/2,player.y+player.h,'#38bdf8',10);}}
+function startSlide(){if(!player.isGrounded)player.vy=Math.max(player.vy,780);if(!player.isSliding){SFX.slide();player.isSliding=true;const b=player.y+player.h;player.h=player.slideH;player.y=b-player.h;}}
+function stopSlide(){if(player.isSliding){player.isSliding=false;const b=player.y+player.h;player.h=player.standH;player.y=b-player.h;}}
+
+// Water-jet dash: burst forward (right by default, left if holding left), hang in the air, i-frames.
+function dash(){
+  if(gameState!=='PLAYING'||player.dashTimer>0||player.dashCooldown>0)return;
+  stopSlide();
+  const l=keys['ArrowLeft']||keys['KeyA'],r=keys['ArrowRight']||keys['KeyD'];
+  const dir=(l&&!r)?-1:1;
+  player.dashDir=dir;player.facing=dir;
+  player.dashTimer=DASH_TIME;player.dashCooldown=DASH_COOLDOWN;player.dashIframes=DASH_IFRAMES;
+  player.isGrounded=false;
+  SFX.dash();
+  for(let i=0;i<16;i++)particles.push({x:player.x+(dir>0?0:player.w),y:player.y+player.h/2+(Math.random()-.5)*20,vx:-dir*(120+Math.random()*320),vy:(Math.random()-.5)*160,size:i%2===0?6:4,color:i%3===0?'#ffffff':i%3===1?'#a5f3fc':'#22d3ee',life:.3+Math.random()*.2});
+}
+
+// ================= TITAN ATTACKS =================
+function spawnTitanAttack(){
+  const set=PATTERNS[stageIndex];
+  let attack=set[attackCycle%set.length];
+  attackCycle++;
+  titan.lastAttackType=attack;
+  const F=titanFuryMode;
+  const gy=BASE_GROUND_Y;
+  const px=player.x+player.w/2;
+  switch(attack){
+  case 'DEBRIS':spawnDebrisPattern();titan.attackCooldown=Math.max(1.55,2.35/speedMultiplier);break;
+  case 'LASER':spawnTrackingLaserVolley();titan.attackCooldown=Math.max(2.5,3.5/speedMultiplier);break;
+  case 'SHOCKWAVE':
+    bossHazards.push({type:'SHOCKWAVE',x:900,y:gy-28,w:54,h:28,state:'WARN',timer:F?.58:.78,speed:F?650:560});
+    if(F)bossHazards.push({type:'SHOCKWAVE',x:1110,y:gy-28,w:54,h:28,state:'WARN',timer:1.05,speed:690});
+    titan.slamHand=titan.slamHand==='LEFT'?'RIGHT':'LEFT';titan.slamState='RAISE';titan.slamTimer=.78;titan.chargeLevel=.7;
+    titan.attackCooldown=Math.max(2.2,3.1/speedMultiplier);break;
+  case 'DRONE':{
+    const ty=Math.max(92,Math.min(gy-86,player.y+player.h/2));
+    bossHazards.push({type:'DRONE',x:titan.x-115,y:ty,w:38,h:30,state:'WARN',timer:F?.52:.7,speed:F?530:440});
+    if(F)bossHazards.push({type:'DRONE',x:titan.x+5,y:Math.max(86,Math.min(gy-120,ty-105)),w:38,h:30,state:'WARN',timer:.92,speed:500});
+    titan.chargeLevel=.8;titan.attackCooldown=Math.max(2.3,3.2/speedMultiplier);break;}
+  case 'DIVE':{ // 45-degree dive bomb: telegraphed diagonal line, then the Titan's fist-bomb streaks down-left
+    const mk=(tx,ty,delay)=>{const sx=tx+ty+80,sy=-80;bossHazards.push({type:'DIVE',x:sx,y:sy,w:44,h:44,tx:tx,ty:ty,sx:sx,sy:sy,state:'WARN',timer:delay,speed:F?820:700});};
+    const tx=Math.max(80,Math.min(640,px)),ty=Math.min(gy-20,player.y+player.h/2);
+    mk(tx,ty,F?.75:.95);
+    if(F)mk(Math.max(60,tx-170),gy-20,1.2);
+    titan.slamHand=titan.slamHand==='LEFT'?'RIGHT':'LEFT';titan.slamState='RAISE';titan.slamTimer=.9;
+    titan.chargeLevel=.9;titan.attackCooldown=Math.max(2.6,3.4/speedMultiplier);break;}
+  // ---- LEVEL 1 ----
+  case 'CRATE': // floating cargo crate: SLIDE under it
+    bossHazards.push({type:'CRATE',x:900,y:gy-62,w:52,h:34,state:'WARN',timer:.8,speed:F?500:420});
+    if(F)bossHazards.push({type:'CRATE',x:1130,y:gy-62,w:52,h:34,state:'WARN',timer:1.1,speed:500});
+    titan.chargeLevel=.7;titan.attackCooldown=Math.max(2.2,3.0/speedMultiplier);break;
+  case 'WRECKBALL': // swinging wrecking ball: stay out of the arc, or slide under the low point
+    bossHazards.push({type:'WRECKBALL',ax:Math.max(220,Math.min(560,px+40)),state:'WARN',timer:.9,age:0,len:320,r:24,speed:90,x:0,y:0,w:0,h:0});
+    titan.chargeLevel=.8;titan.attackCooldown=Math.max(3.4,4.2/speedMultiplier);break;
+  // ---- LEVEL 2 ----
+  case 'URCHIN': // bouncing urchin: double-jump / time the hop
+    bossHazards.push({type:'URCHIN',x:900,y:gy-30,baseY:gy-30,w:30,h:30,vy:0,state:'WARN',timer:.7,speed:F?430:370});
+    titan.chargeLevel=.7;titan.attackCooldown=Math.max(2.2,3.0/speedMultiplier);break;
+  case 'JELLY': // jellyfish wave: weave through
+    for(let i=0;i<3;i++)bossHazards.push({type:'JELLY',x:900+i*95,y:gy-95,baseY:gy-95,w:30,h:30,phase:i*1.6,age:0,state:'WARN',timer:.75+i*.12,speed:F?330:280});
+    titan.chargeLevel=.8;titan.attackCooldown=Math.max(2.8,3.6/speedMultiplier);break;
+  // ---- LEVEL 3 ----
+  case 'GEYSER': // lava geysers erupt where you stand
+    [-130,0,130].forEach((off,i)=>bossHazards.push({type:'GEYSER',x:Math.max(40,Math.min(640,px+off-22)),y:gy-4,w:44,h:4,state:'WARN',timer:.85+i*.28,life:.55}));
+    titan.chargeLevel=.8;titan.attackCooldown=Math.max(2.6,3.5/speedMultiplier);break;
+  case 'FIREBALL':{ // lobbed fireball lands on where you were
+    const T=1.15,g=900,x0=titan.x-18,y0=titan.y+45,tx=Math.max(60,Math.min(640,px)),ly=gy-22;
+    bossHazards.push({type:'FIREBALL',x:x0,y:y0,w:28,h:28,vx:(tx-x0)/T,vy:(ly-y0-.5*g*T*T)/T,g:g,landX:tx,landY:gy,state:'WARN',timer:.6});
+    if(F)bossHazards.push({type:'FIREBALL',x:x0,y:y0,w:28,h:28,vx:(Math.max(60,tx-150)-x0)/T,vy:(ly-y0-.5*g*T*T)/T,g:g,landX:Math.max(60,tx-150),landY:gy,state:'WARN',timer:.9});
+    titan.chargeLevel=.9;titan.attackCooldown=Math.max(2.4,3.2/speedMultiplier);break;}
+  // ---- LEVEL 4 ----
+  case 'ICESPIKE': // ice stalactites drop from above
+    [-120,10,140].forEach((off,i)=>bossHazards.push({type:'ICESPIKE',x:Math.max(40,Math.min(640,px+off-11)),y:-50,w:22,h:50,state:'WARN',timer:.8+i*.22}));
+    titan.chargeLevel=.8;titan.attackCooldown=Math.max(2.5,3.3/speedMultiplier);break;
+  case 'GUST': // blizzard gust pushes you back while a shockwave rolls in
+    bossHazards.push({type:'GUST',state:'WARN',timer:.9,life:2.2,x:0,y:0,w:0,h:0});
+    bossHazards.push({type:'SHOCKWAVE',x:1000,y:gy-28,w:54,h:28,state:'WARN',timer:1.4,speed:F?650:560});
+    titan.chargeLevel=.9;titan.attackCooldown=Math.max(3.2,4.0/speedMultiplier);break;
+  }
+  if(F)titan.attackCooldown*=.68;
+  if(bossActive&&bossWeakTimer<=0&&bossWeakCooldown<=0){
+    bossAttacksToWeak++;
+    if(bossAttacksToWeak>=(stageIndex===3?2:1)){bossWeakTimer=5.5;bossAttacksToWeak=0;floatingTexts.push({x:560,y:205,text:'CORE EXPOSED! JUMP!',life:1.4});SFX.dodgeBonus();}
+  }
+}
+
+function beginBoss(){bossActive=true;bossMaxHP=stageIndex<2?2:3;bossHP=bossMaxHP;bossWeakTimer=0;bossWeakCooldown=0;bossAttacksToWeak=0;titan.attackCooldown=1.15;attackCycle=0;stageBannerTimer=3.2;floatingTexts.push({x:450,y:145,text:'BOSS INCOMING!',life:1.8});}
+
+function hitBossCore(){
+  if(!bossActive||bossWeakTimer<=0||bossWeakCooldown>0||(player.isGrounded&&player.dashTimer<=0))return;
+  const o=player.x+player.w>core.x&&player.x<core.x+core.w&&player.y+player.h>core.y&&player.y<core.y+core.h;
+  if(!o)return;
+  bossHP--;bossWeakTimer=0;bossWeakCooldown=1.8;bossAttacksToWeak=0;player.dashTimer=0;player.vy=-520;player.jumpsLeft=1;player.invulnTimer=Math.max(player.invulnTimer,.6);screenShake=16;
+  addScoreBonus(200,core.x,core.y-18,'CORE HIT! +200');spawnParticles(core.x+core.w/2,core.y+core.h/2,currentStage().accent,32);
+  if(bossHP<=0){
+    bossActive=false;debrisList=[];laserList=[];bossHazards=[];SFX.dodgeBonus();
+    if(stageIndex===STAGES.length-1){gameState='VICTORY';if(Math.floor(score)>highScore)highScore=Math.floor(score);}
+    else{gameState='TRANSITION';transitionTimer=3.2;}
+  }
+}
+function nextStage(){
+  stageIndex++;stageProgress=0;bossActive=false;titanFuryMode=false;bossWeakTimer=bossWeakCooldown=bossAttacksToWeak=0;attackCycle=0;titan.attackCooldown=1.6;stageBannerTimer=3.3;speedMultiplier=1;
+  debrisList=[];laserList=[];bossHazards=[];player.hp=Math.min(player.maxHp,player.hp+1);player.invulnTimer=2;player.y=120;player.vy=0;player.jumpsLeft=2;player.isSliding=false;player.h=player.standH;player.inWater=false;
+  Object.keys(keys).forEach(c=>keys[c]=false);resetPlatforms();gameState='PLAYING';
+}
+function spawnDebrisPattern(){
+  const pattern=Math.floor(Math.random()*3),wt=Math.max(.6,.9/speedMultiplier);
+  titan.slamHand=titan.slamHand==='LEFT'?'RIGHT':'LEFT';titan.slamState='RAISE';titan.slamTimer=wt;
+  const ax=Math.max(90,Math.min(480,player.x+60));
+  const mk=(x,w,h,ws,wtm)=>debrisList.push({x:Math.max(30,Math.min(600,x)),w:w,y:-h,h:h,waterSide:ws,warnTimer:wtm,state:'WARN',impactTimer:0,scored:false});
+  if(pattern===0)[ax+120,ax+10,ax-100].forEach((x,i)=>mk(x,54,48,i%2===0?1:-1,wt+i*.22));
+  else if(pattern===1)[ax-95,ax+95].forEach(x=>mk(x,72,54,x<ax?1:-1,wt));
+  else mk(Math.max(40,Math.min(560,player.x-20)),108,60,1,wt+.1);
+}
+function spawnTrackingLaserVolley(){
+  const ox=titan.x-18,oy=titan.y+45,tx=player.x+player.w/2,ty=player.y+player.h/2;
+  laserList.push({originX:ox,originY:oy,targetX:tx,targetY:ty,angle:Math.atan2(ty-oy,tx-ox),step:1,maxSteps:4,warnDuration:Math.max(.42,.62/speedMultiplier),fireDuration:Math.max(.22,.30/speedMultiplier),timer:Math.max(.42,.62/speedMultiplier),state:'WARN'});
+  SFX.laserLock(1);
+}
+function damagePlayer(){
+  if(player.invulnTimer>0||player.dashIframes>0||gameState!=='PLAYING')return;
+  player.hp--;SFX.hurt();player.invulnTimer=1.2;screenShake=16;hitStopTimer=.06;spawnParticles(player.x+player.w/2,player.y+player.h/2,'#ef4444',22);
+  if(player.hp<=0){gameState='GAMEOVER';if(Math.floor(score)>highScore)highScore=Math.floor(score);}
+}
+function addScoreBonus(p,x,y,l){score+=p;SFX.dodgeBonus();floatingTexts.push({x:Math.round(x),y:Math.round(y),text:l,life:.75});}
+function spawnParticles(x,y,color,count){for(let i=0;i<count;i++)particles.push({x:Math.round(x),y:Math.round(y),vx:(Math.random()-.5)*340,vy:(Math.random()-.85)*340,size:i%2===0?6:4,color:color,life:.35+Math.random()*.25});}
+function rectHitsPlayer(x,y,w,h){return player.x+player.w-7>x&&player.x+7<x+w&&player.y+player.h-4>y&&player.y+4<y+h;}
+function wreckPos(h){const a=Math.sin(h.age*2.6)*1.15;return{x:h.ax+Math.sin(a)*h.len,y:Math.cos(a)*h.len};}
+
+// ================= UPDATE =================
+function update(dt){
+  if(hitStopTimer>0){hitStopTimer-=dt;return;}
+  titan.eyePulse+=dt*5;
+  if(titan.slamState==='RAISE'){titan.slamTimer-=dt;if(titan.slamTimer<=0){titan.slamState='SLAM';titan.slamTimer=.25;}}
+  else if(titan.slamState==='SLAM'){titan.slamTimer-=dt;if(titan.slamTimer<=0){titan.slamState='RECOVER';titan.slamTimer=.45;}}
+  else if(titan.slamState==='RECOVER'){titan.slamTimer-=dt;if(titan.slamTimer<=0)titan.slamState='IDLE';}
+  const al=laserList.find(l=>l.state==='WARN'||l.state==='FIRE');
+  if(al)titan.chargeLevel=al.state==='WARN'?Math.min(1,.35+(al.step/al.maxSteps)*.65):1;else titan.chargeLevel=Math.max(0,titan.chargeLevel-dt*2.5);
+  if(screenShake>0)screenShake=Math.max(0,screenShake-dt*48);
+  for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=600*dt;p.life-=dt;if(p.life<=0)particles.splice(i,1);}
+  for(let i=floatingTexts.length-1;i>=0;i--){const f=floatingTexts[i];f.y-=45*dt;f.life-=dt;if(f.life<=0)floatingTexts.splice(i,1);}
+  if(gameState==='TRANSITION'){transitionTimer-=dt;if(transitionTimer<=0)nextStage();return;}
+  if(gameState!=='PLAYING')return;
+  campaignTime+=dt;stageBannerTimer=Math.max(0,stageBannerTimer-dt);bossWeakTimer=Math.max(0,bossWeakTimer-dt);bossWeakCooldown=Math.max(0,bossWeakCooldown-dt);
+  if(!bossActive){stageProgress+=dt*18;if(stageProgress>=STAGE_TARGET)beginBoss();}
+  const scrollSpeed=290*speedMultiplier;
+  score+=dt*18*speedMultiplier;
+  speedMultiplier=1+Math.min(.7,stageIndex*.12+stageProgress/1150);
+  if(!titanFuryMode&&bossActive&&stageIndex===3&&bossHP<=2){titanFuryMode=true;furyBannerTimer=3.2;titan.attackCooldown=Math.min(titan.attackCooldown,.65);titan.chargeLevel=1;screenShake=Math.max(screenShake,10);spawnParticles(titan.x-18,titan.y+45,'#facc15',28);floatingTexts.push({x:450,y:150,text:'TITAN FURY UNLEASHED!',life:2.2});SFX.laserFire();}
+  if(furyBannerTimer>0)furyBannerTimer=Math.max(0,furyBannerTimer-dt);
+  worldScroll+=scrollSpeed*dt;
+  for(let i=platforms.length-1;i>=0;i--){platforms[i].x-=scrollSpeed*dt;if(platforms[i].x+platforms[i].w<-120)platforms.splice(i,1);}
+  nextPlatformX-=scrollSpeed*dt;while(nextPlatformX<1300)spawnNextPlatformSection();
+
+  const ml=keys['ArrowLeft']||keys['KeyA'],mr=keys['ArrowRight']||keys['KeyD'];
+  if(ml&&!mr){player.vx=-MOVE_SPEED;player.facing=-1;}else if(mr&&!ml){player.vx=MOVE_SPEED;player.facing=1;}else player.vx=0;
+  if(player.dashTimer>0){player.vx=player.dashDir*DASH_SPEED;player.facing=player.dashDir;}
+  // blizzard gust push
+  let gust=0;bossHazards.forEach(h=>{if(h.type==='GUST'&&h.state==='MOVE')gust=1;});
+  player.x+=(player.vx-gust*250)*dt;
+  player.x=Math.max(24,Math.min(620,player.x));
+  if(player.invulnTimer>0)player.invulnTimer-=dt;
+  player.dashCooldown=Math.max(0,player.dashCooldown-dt);player.dashIframes=Math.max(0,player.dashIframes-dt);
+  if(player.dashTimer>0){
+    player.dashTimer=Math.max(0,player.dashTimer-dt);
+    const bx=player.x+(player.dashDir>0?0:player.w);
+    for(let k=0;k<4;k++)particles.push({x:bx,y:player.y+player.h/2+(Math.random()-.5)*22,vx:-player.dashDir*(160+Math.random()*300),vy:(Math.random()-.5)*120,size:k%2===0?6:4,color:k===0?'#ffffff':k===1?'#a5f3fc':'#22d3ee',life:.25+Math.random()*.2});
+  }
+
+  if(!player.isGrounded||player.vx>0||player.isSliding){if(Math.random()<.45)player.afterImages.push({x:player.x,y:player.y,w:player.w,h:player.h,isSpin:!player.isGrounded&&!player.isSliding,alpha:.45});}
+  for(let i=player.afterImages.length-1;i>=0;i--){const a=player.afterImages[i];a.x-=scrollSpeed*.4*dt;a.alpha-=dt*2.4;if(a.alpha<=0)player.afterImages.splice(i,1);}
+  if(player.isGrounded&&Math.random()<.35)particles.push({x:player.x+(player.facing===1?4:player.w-4),y:player.y+player.h-4,vx:-scrollSpeed*.5+(Math.random()-.5)*40,vy:-20-Math.random()*40,size:4,color:'#e2e8f0',life:.22});
+
+  const wasInWater=player.inWater;
+  player.inWater=debrisList.some(d=>{if(d.state!=='FALL')return false;const wx=d.x+(d.waterSide>0?d.w+5:-23);return player.x+player.w>wx&&player.x<wx+18&&player.y+player.h>0&&player.y<BASE_GROUND_Y;});
+  const prevBottom=player.y+player.h;
+  if(player.inWater){
+    player.vy=-460;player.isGrounded=false;if(player.isSliding)stopSlide();
+    if(wasInWater!==true){
+      const uc=debrisList.find(d=>d.state==='FALL'&&player.x+player.w>d.x+(d.waterSide>0?d.w+5:-23)&&player.x<d.x+(d.waterSide>0?d.w+5:-23)+18);
+      if(uc&&!uc.waterScored){uc.waterScored=true;addScoreBonus(25,player.x+player.w/2,player.y-10,'WATER BOOST!');}
+      spawnParticles(player.x+player.w/2,player.y+player.h/2,'#67e8f9',8);
     }
+    player.waterBubbleTimer-=dt;
+    if(player.waterBubbleTimer<=0){particles.push({x:player.x+player.w/2+(Math.random()-.5)*24,y:player.y+player.h,vx:(Math.random()-.5)*28,vy:-90-Math.random()*70,size:3+Math.floor(Math.random()*3),color:'#a5f3fc',life:.45});player.waterBubbleTimer=.08;}
+  }else player.vy+=GRAVITY*dt;
+  if(player.dashTimer>0){ // hang in the air; home toward an exposed core so the dash connects
+    if(bossActive&&bossWeakTimer>0)player.vy=Math.max(-650,Math.min(650,(core.y+core.h/2-(player.y+player.h/2))*8));
+    else player.vy=0;
+  }
+  player.y+=player.vy*dt;player.y=Math.max(16,player.y);if(player.y===16&&player.vy<0)player.vy=0;
+  player.isGrounded=false;
+  if(player.vy>=0){for(let i=0;i<platforms.length;i++){const p=platforms[i];const ho=player.x+player.w-8>p.x&&player.x+8<p.x+p.w;if(ho&&prevBottom<=p.y+12&&player.y+player.h>=p.y){player.y=p.y-player.h;player.vy=0;player.isGrounded=true;player.jumpsLeft=2;break;}}}
+  if(player.y>canvas.height+20){damagePlayer();if(gameState==='PLAYING'){player.y=120;player.vy=0;player.jumpsLeft=2;}}
+  const as=player.vx>0?23:player.vx<0?12:18;player.runCycle+=dt*as*speedMultiplier;
+  if(player.inWater)player.spinAngle=-Math.PI/2;else if(!player.isGrounded)player.spinAngle+=dt*26*player.facing;else player.spinAngle=0;
 
-    // ==========================================
-    // SYNTHESIZED 16-BIT SOUND ENGINE (Web Audio API)
-    // ==========================================
-    const SFX = {
-      ctx: null,
-      muted: false,
+  hitBossCore();if(gameState!=='PLAYING')return;
+  titan.attackCooldown-=dt;if(titan.attackCooldown<=0)spawnTitanAttack();
 
-      init() {
-        if (!this.ctx) {
-          const AudioCtx = window.AudioContext || window.webkitAudioContext;
-          if (AudioCtx) this.ctx = new AudioCtx();
-        }
-        if (this.ctx && this.ctx.state === 'suspended') {
-          this.ctx.resume();
-        }
-      },
+  for(let i=debrisList.length-1;i>=0;i--){
+    const d=debrisList[i];
+    if(d.state==='WARN'){d.warnTimer-=dt;if(d.warnTimer<=0)d.state='FALL';}
+    else if(d.state==='FALL'){
+      d.y+=1600*dt;let ty=BASE_GROUND_Y;
+      for(let j=0;j<platforms.length;j++){const p=platforms[j];if(d.x+d.w>p.x&&d.x<p.x+p.w&&p.y<=ty)ty=p.y;}
+      if(d.y+d.h>=ty){d.y=ty-d.h;d.state='IMPACT';d.impactTimer=.22;SFX.debrisImpact();screenShake=Math.max(screenShake,8);spawnParticles(d.x+d.w/2,ty,'#f97316',14);
+        const dist=Math.abs((player.x+player.w/2)-(d.x+d.w/2));if(!d.scored&&dist<130&&player.invulnTimer<=0){d.scored=true;addScoreBonus(50,player.x+20,player.y-12,'+50 DODGE!');}}
+    }else if(d.state==='IMPACT'){d.impactTimer-=dt;if(d.impactTimer<=0){debrisList.splice(i,1);continue;}}
+    if(d.state==='FALL'||d.state==='IMPACT'){if(player.x+6<d.x+d.w&&player.x+player.w-6>d.x&&player.y+4<d.y+d.h&&player.y+player.h>d.y)damagePlayer();}
+  }
 
-      playTone(type, startFreq, endFreq, duration, volume = 0.14, delay = 0) {
-        if (this.muted || !this.ctx) return;
-        const now = this.ctx.currentTime + delay;
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-
-        osc.type = type;
-        osc.frequency.setValueAtTime(startFreq, now);
-        osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + duration);
-
-        gain.gain.setValueAtTime(volume, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
-
-        osc.start(now);
-        osc.stop(now + duration);
-      },
-
-      playNoise(duration, filterFreq, filterType = 'lowpass', volume = 0.18) {
-        if (this.muted || !this.ctx) return;
-        const bufferSize = Math.floor(this.ctx.sampleRate * duration);
-        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) {
-          data[i] = Math.random() * 2 - 1;
-        }
-
-        const noise = this.ctx.createBufferSource();
-        noise.buffer = buffer;
-
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = filterType;
-        filter.frequency.setValueAtTime(filterFreq, this.ctx.currentTime);
-
-        const gain = this.ctx.createGain();
-        gain.gain.setValueAtTime(volume, this.ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
-
-        noise.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.ctx.destination);
-
-        noise.start();
-      },
-
-      jump() {
-        this.playTone('square', 220, 660, 0.16, 0.12);
-      },
-
-      doubleJump() {
-        this.playTone('square', 380, 880, 0.14, 0.12);
-        this.playTone('triangle', 540, 1080, 0.15, 0.12, 0.03);
-      },
-
-      slide() {
-        this.playNoise(0.2, 1100, 'bandpass', 0.15);
-        this.playTone('triangle', 240, 100, 0.16, 0.08);
-      },
-
-      laserLock(stepNum) {
-        const base = 320 + stepNum * 75;
-        this.playTone('square', base, base * 1.45, 0.11, 0.09);
-      },
-
-      laserFire() {
-        this.playTone('sawtooth', 940, 130, 0.24, 0.16);
-        this.playTone('square', 480, 75, 0.24, 0.12);
-        this.playNoise(0.18, 1900, 'bandpass', 0.14);
-      },
-
-      debrisImpact() {
-        this.playTone('sine', 130, 32, 0.28, 0.24);
-        this.playNoise(0.24, 420, 'lowpass', 0.25);
-      },
-
-      dodgeBonus() {
-        this.playTone('square', 587, 880, 0.09, 0.09);
-        this.playTone('square', 880, 1174, 0.12, 0.09, 0.06);
-      },
-
-      hurt() {
-        this.playTone('sawtooth', 260, 55, 0.35, 0.2);
-        this.playTone('square', 180, 45, 0.35, 0.16, 0.04);
+  // ---- boss hazards (old + new) ----
+  for(let i=bossHazards.length-1;i>=0;i--){
+    const h=bossHazards[i];
+    if(h.state==='WARN'){
+      h.timer-=dt;
+      if(h.type==='WRECKBALL'){h.ax-=0;}
+      if(h.timer<=0){h.state='MOVE';
+        if(h.type==='SHOCKWAVE'||h.type==='GEYSER'||h.type==='CRATE')SFX.debrisImpact();
+        else if(h.type==='GUST')SFX.slide();
+        else SFX.laserFire();
+        if(h.type==='GEYSER'){h.y=BASE_GROUND_Y-210;h.h=210;screenShake=Math.max(screenShake,6);spawnParticles(h.x+h.w/2,BASE_GROUND_Y,'#f97316',10);}
       }
-    };
-
-    // Constants
-    const BASE_GROUND_Y = 384;
-    const GRAVITY = 2150;
-    const JUMP_FORCE = -740;
-    const DOUBLE_JUMP_FORCE = -640;
-    const MOVE_SPEED = 325;
-
-    // Game State
-    let gameState = 'START';
-    // Four finite stages, each with its own boss encounter and a final victory.
-    const STAGE_TARGET = 350; // progress earned from survival, not score bonuses
-    const BOSS_NAMES = ['HARBOR SENTINEL', 'CORAL WARDEN', 'MAGMA COLOSSUS', 'ABYSSAL TITAN'];
-    let stageIndex = 0, stageProgress = 0;
-    let bossActive = false, bossHP = 0, bossMaxHP = 0;
-    let bossWeakTimer = 0, bossWeakCooldown = 0, bossAttacksToWeak = 0;
-    let stageBannerTimer = 0, transitionTimer = 0;
-    let campaignTime = 0;
-    const core = {x: 574, y: 250, w: 44, h: 46};
-    let score = 0;
-    let highScore = 0;
-    try {
-      highScore = Number(localStorage.getItem('shark_parkour_16bit_hs') || 0);
-    } catch (storageError) {
-      // Continue with an in-memory high score when storage is unavailable.
+      continue;
     }
-    let speedMultiplier = 1;
-    let screenShake = 0;
-    let hitStopTimer = 0;
-    let worldScroll = 0;
-    let crtEnabled = true;
-
-    const stars = Array.from({ length: 28 }, (_, i) => ({
-      x: (i * 137) % 900,
-      y: 18 + ((i * 73) % 150),
-      size: i % 3 === 0 ? 3 : 2,
-      phase: i * 0.7
-    }));
-
-    // Quadruped Shark Guy Player
-    const player = {
-      x: 160,
-      y: BASE_GROUND_Y - 36,
-      w: 54,
-      h: 36,
-      standH: 36,
-      slideH: 22,
-      vx: 0,
-      vy: 0,
-      facing: 1,
-      jumpsLeft: 2,
-      isGrounded: true,
-      isSliding: false,
-      invulnTimer: 0,
-      hp: 3,
-      maxHp: 3,
-      runCycle: 0,
-      spinAngle: 0,
-      inWater: false,
-      waterBubbleTimer: 0,
-      afterImages: []
-    };
-
-    // Platforming Sections
-    let platforms = [];
-    let nextPlatformX = 0;
-
-    // Giant 16-Bit Mecha-Titan Boss
-    const titan = {
-      x: 785,
-      y: 235,
-      eyePulse: 0,
-      attackCooldown: 1.5,
-      lastAttackType: '',
-      slamHand: 'LEFT',
-      slamState: 'IDLE',
-      slamTimer: 0,
-      chargeLevel: 0
-    };
-
-    let debrisList = [];
-    let laserList = [];
-    let particles = [];
-    let floatingTexts = [];
-    let bossHazards = [];
-    let attackCycle = 0;
-    let titanFuryMode = false;
-    let furyBannerTimer = 0;
-
-    const STAGES = [
-      { name: 'NEON HARBOR', sky: ['#090d26','#101842','#1a2766','#25398c','#364fb3','#5b4b9e','#8c4378','#b84a54'], water: '#1d4ed8', wave: '#60a5fa', tile: '#b45309', tileDark: '#451a03', top: '#15803d', topLight: '#22c55e', accent: '#38bdf8' },
-      { name: 'CORAL CAVERNS', sky: ['#071b2b','#0b3445','#10566a','#147d83','#219c91','#36a58a','#5a9c76','#8cb56b'], water: '#0e7490', wave: '#67e8f9', tile: '#9f1239', tileDark: '#4c0519', top: '#0f766e', topLight: '#2dd4bf', accent: '#f472b6' },
-      { name: 'VOLCANIC TRENCH', sky: ['#180b16','#35101b','#57151b','#7c2418','#a33a16','#c45a1a','#e07824','#f59e0b'], water: '#7f1d1d', wave: '#fb923c', tile: '#78350f', tileDark: '#431407', top: '#9a3412', topLight: '#ea580c', accent: '#facc15' },
-      { name: 'FROSTBYTE REEF', sky: ['#071426','#0c2344','#123b68','#1d5b89','#367fa8','#62a5c7','#9ac8dc','#d2eaf2'], water: '#0369a1', wave: '#bae6fd', tile: '#475569', tileDark: '#1e293b', top: '#0e7490', topLight: '#22d3ee', accent: '#e0f2fe' }
-    ];
-    function currentStage() { return STAGES[stageIndex]; }
-    function currentStageNumber() { return stageIndex; }
-
-    // Input Tracking
-    const keys = {};
-    window.addEventListener('keydown', (e) => {
-      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyS', 'KeyA', 'KeyD'].includes(e.code)) {
-        e.preventDefault();
+    switch(h.type){
+    case 'SHOCKWAVE':case 'DRONE':case 'CRATE':case 'URCHIN':case 'JELLY':
+      h.x-=h.speed*dt;
+      if(h.type==='DRONE')h.y+=Math.sin(titan.eyePulse*1.2+i)*18*dt;
+      if(h.type==='URCHIN'){h.vy+=1500*dt;h.y+=h.vy*dt;if(h.y>=h.baseY){h.y=h.baseY;h.vy=-540;}}
+      if(h.type==='JELLY'){h.age+=dt;h.y=h.baseY+Math.sin(h.age*3.4+h.phase)*55;}
+      if(rectHitsPlayer(h.x,h.y,h.w,h.h)){h.hitPlayer=true;damagePlayer();}
+      if(h.x+h.w<-20){
+        if(h.type==='SHOCKWAVE'&&!h.hitPlayer&&player.invulnTimer<=0)addScoreBonus(75,player.x+20,player.y-14,'+75 JUMPED!');
+        else if((h.type==='CRATE'||h.type==='URCHIN')&&!h.hitPlayer&&player.invulnTimer<=0)addScoreBonus(60,player.x+20,player.y-14,'+60 DODGED!');
+        bossHazards.splice(i,1);
       }
-      if (!keys[e.code]) {
-        keys[e.code] = true;
-        handleKeyPress(e.code);
+      break;
+    case 'DIVE':
+      h.x-=h.speed*.7071*dt;h.y+=h.speed*.7071*dt;
+      if(rectHitsPlayer(h.x-h.w/2,h.y-h.h/2,h.w,h.h)){h.hitPlayer=true;damagePlayer();}
+      if(h.y>=BASE_GROUND_Y-18||h.x<-80){
+        SFX.debrisImpact();screenShake=Math.max(screenShake,9);spawnParticles(h.x,BASE_GROUND_Y-10,'#f97316',18);spawnParticles(h.x,BASE_GROUND_Y-10,'#facc15',8);
+        if(!h.hitPlayer&&player.invulnTimer<=0&&player.dashIframes<=0)addScoreBonus(70,player.x+20,player.y-14,'+70 DIVE DODGED!');
+        bossHazards.splice(i,1);
       }
-    });
-
-    window.addEventListener('keyup', (e) => {
-      keys[e.code] = false;
-      if (e.code === 'ArrowDown' || e.code === 'KeyS') {
-        stopSlide();
+      break;
+    case 'GEYSER':
+      h.life-=dt;if(rectHitsPlayer(h.x,h.y,h.w,h.h))damagePlayer();
+      if(h.life<=0){if(!h.hitPlayer&&player.invulnTimer<=0&&Math.abs(player.x+player.w/2-(h.x+h.w/2))<90)addScoreBonus(40,player.x+20,player.y-14,'+40 DODGE!');bossHazards.splice(i,1);}
+      break;
+    case 'FIREBALL':
+      h.vy+=h.g*dt;h.x+=h.vx*dt;h.y+=h.vy*dt;
+      if(rectHitsPlayer(h.x,h.y,h.w,h.h))damagePlayer();
+      if(h.y+h.h>=BASE_GROUND_Y-2&&h.vy>0){
+        SFX.debrisImpact();screenShake=Math.max(screenShake,8);spawnParticles(h.x+h.w/2,BASE_GROUND_Y,'#facc15',16);
+        h.type='EXPLODE';h.x=h.x-22;h.y=BASE_GROUND_Y-46;h.w=72;h.h=46;h.life=.28;
       }
-    });
-
-    window.addEventListener('blur', () => {
-      Object.keys(keys).forEach(code => { keys[code] = false; });
-      stopSlide();
-    });
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        Object.keys(keys).forEach(code => { keys[code] = false; });
-        stopSlide();
-      }
-    });
-
-    function handleKeyPress(code) {
-      SFX.init();
-      if (code === 'KeyM') {
-        SFX.muted = !SFX.muted;
-        return;
-      }
-      if (code === 'KeyC') {
-        crtEnabled = !crtEnabled;
-        return;
-      }
-
-      if (gameState === 'START' || gameState === 'GAMEOVER' || gameState === 'VICTORY') {
-        if (code === 'Space' || code === 'Enter') {
-          startGame();
-        }
-        return;
-      }
-
-      if (gameState === 'PLAYING') {
-        if (code === 'Space' || code === 'ArrowUp' || code === 'KeyW') {
-          jump();
-        }
-        if (code === 'ArrowDown' || code === 'KeyS') {
-          startSlide();
-        }
-      }
+      break;
+    case 'EXPLODE':
+      h.life-=dt;if(rectHitsPlayer(h.x,h.y,h.w,h.h))damagePlayer();
+      if(h.life<=0)bossHazards.splice(i,1);break;
+    case 'ICESPIKE':
+      h.y+=900*dt;
+      if(rectHitsPlayer(h.x,h.y,h.w,h.h))damagePlayer();
+      if(h.y+h.h>=BASE_GROUND_Y){SFX.debrisImpact();spawnParticles(h.x+h.w/2,BASE_GROUND_Y,'#e0f2fe',12);if(!h.hitPlayer&&player.invulnTimer<=0&&Math.abs(player.x+player.w/2-(h.x+h.w/2))<80)addScoreBonus(40,player.x+20,player.y-14,'+40 DODGE!');bossHazards.splice(i,1);}
+      break;
+    case 'GUST':
+      h.life-=dt;if(h.life<=0)bossHazards.splice(i,1);break;
+    case 'WRECKBALL':
+      h.age+=dt;h.ax-=h.speed*dt;
+      {const bp=wreckPos(h);h.x=bp.x;h.y=bp.y;
+       const cx=Math.max(player.x+7,Math.min(h.x,player.x+player.w-7)),cy=Math.max(player.y+4,Math.min(h.y,player.y+player.h-4));
+       if(Math.hypot(h.x-cx,h.y-cy)<h.r)damagePlayer();}
+      if(h.age>3.6){if(player.invulnTimer<=0)addScoreBonus(80,player.x+20,player.y-14,'+80 DODGED!');bossHazards.splice(i,1);}
+      break;
     }
+  }
 
-    // ==========================================
-    // PLATFORMING SECTION GENERATOR
-    // ==========================================
-    function resetPlatforms() {
-      platforms = [];
-      platforms.push({
-        x: 0,
-        y: BASE_GROUND_Y,
-        w: 960,
-        h: 70,
-        type: 'GROUND'
-      });
-      nextPlatformX = 960;
-      for (let i = 0; i < 4; i++) {
-        spawnNextPlatformSection();
-      }
-    }
-
-    function spawnNextPlatformSection() {
-      const pattern = Math.floor(Math.random() * 4);
-
-      if (pattern === 0) {
-        const gapW = 96;
-        const floorX = nextPlatformX + gapW;
-        const floorW = 420;
-        platforms.push({ x: floorX, y: BASE_GROUND_Y, w: floorW, h: 70, type: 'GROUND' });
-        platforms.push({ x: floorX + 90, y: BASE_GROUND_Y - 96, w: 192, h: 24, type: 'LEDGE' });
-        nextPlatformX = floorX + floorW;
-
-      } else if (pattern === 1) {
-        const step1X = nextPlatformX + 72;
-        platforms.push({ x: step1X, y: BASE_GROUND_Y - 48, w: 168, h: 24, type: 'LEDGE' });
-
-        const step2X = step1X + 210;
-        platforms.push({ x: step2X, y: BASE_GROUND_Y - 114, w: 192, h: 24, type: 'LEDGE' });
-
-        const landX = step2X + 220;
-        platforms.push({ x: landX, y: BASE_GROUND_Y, w: 320, h: 70, type: 'GROUND' });
-        nextPlatformX = landX + 320;
-
-      } else if (pattern === 2) {
-        const startX = nextPlatformX + 48;
-        const w = 480;
-        platforms.push({ x: startX, y: BASE_GROUND_Y, w: w, h: 70, type: 'GROUND' });
-        platforms.push({ x: startX + 60, y: BASE_GROUND_Y - 84, w: 144, h: 24, type: 'LEDGE' });
-        platforms.push({ x: startX + 250, y: BASE_GROUND_Y - 144, w: 168, h: 24, type: 'LEDGE' });
-        nextPlatformX = startX + w;
-
-      } else {
-        const p1 = nextPlatformX + 84;
-        platforms.push({ x: p1, y: BASE_GROUND_Y - 24, w: 168, h: 94, type: 'GROUND' });
-        const p2 = p1 + 168 + 90;
-        platforms.push({ x: p2, y: BASE_GROUND_Y, w: 340, h: 70, type: 'GROUND' });
-        nextPlatformX = p2 + 340;
-      }
-    }
-
-    function startGame() {
-      gameState = 'PLAYING';
-      score = 0;
-      stageIndex = 0;
-      stageProgress = 0;
-      campaignTime = 0;
-      bossActive = false;
-      bossHP = bossMaxHP = 0;
-      bossWeakTimer = bossWeakCooldown = bossAttacksToWeak = 0;
-      transitionTimer = 0;
-      stageBannerTimer = 3.4;
-      worldScroll = 0;
-      speedMultiplier = 1;
-      screenShake = 0;
-      hitStopTimer = 0;
-
-      player.x = 160;
-      player.y = BASE_GROUND_Y - player.standH;
-      player.h = player.standH;
-      player.vx = 0;
-      player.vy = 0;
-      player.facing = 1;
-      player.jumpsLeft = 2;
-      player.isGrounded = true;
-      player.isSliding = false;
-      player.invulnTimer = 0;
-      player.inWater = false;
-      player.waterBubbleTimer = 0;
-      player.hp = player.maxHp;
-      player.afterImages = [];
-
-      resetPlatforms();
-      debrisList = [];
-      laserList = [];
-      bossHazards = [];
-      attackCycle = 0;
-      titanFuryMode = false;
-      furyBannerTimer = 0;
-      particles = [];
-      floatingTexts = [];
-      titan.attackCooldown = 1.3;
-      titan.slamState = 'IDLE';
-      titan.chargeLevel = 0;
-    }
-
-    function jump() {
-      if (player.jumpsLeft > 0) {
-        if (player.jumpsLeft === 2) SFX.jump();
-        else SFX.doubleJump();
-
-        stopSlide();
-        player.vy = player.jumpsLeft === 2 ? JUMP_FORCE : DOUBLE_JUMP_FORCE;
-        player.jumpsLeft--;
-        player.isGrounded = false;
-        spawnParticles(player.x + player.w / 2, player.y + player.h, '#38bdf8', 10);
+  const hoverY=Math.round(Math.sin(titan.eyePulse*.5)*6);
+  for(let i=laserList.length-1;i>=0;i--){
+    const l=laserList[i];l.originX=titan.x-18;l.originY=titan.y+hoverY+45;l.timer-=dt;
+    if(l.state==='WARN'){
+      l.angle=Math.atan2(l.targetY-l.originY,l.targetX-l.originX);
+      if(l.timer<=0){l.state='FIRE';l.timer=l.fireDuration;SFX.laserFire();screenShake=Math.max(screenShake,7);spawnParticles(l.targetX,l.targetY,'#f43f5e',10);}
+    }else if(l.state==='FIRE'){
+      const ex=l.originX+Math.cos(l.angle)*1100,ey=l.originY+Math.sin(l.angle)*1100;
+      const d=pointToSegmentDistance(player.x+player.w/2,player.y+player.h/2,l.originX,l.originY,ex,ey);
+      if(d<(player.isSliding?10:15)+9)damagePlayer();
+      if(l.timer<=0){
+        if(l.step<l.maxSteps){l.step++;l.targetX=player.x+player.w/2;l.targetY=player.y+player.h/2;l.angle=Math.atan2(l.targetY-l.originY,l.targetX-l.originX);l.state='WARN';l.timer=l.warnDuration;SFX.laserLock(l.step);}
+        else{laserList.splice(i,1);if(player.invulnTimer<=0)addScoreBonus(100,player.x+20,player.y-14,'+100 EVADED x4!');}
       }
     }
+  }
+}
+function pointToSegmentDistance(px,py,x1,y1,x2,y2){const dx=x2-x1,dy=y2-y1,ls=dx*dx+dy*dy;let t=((px-x1)*dx+(py-y1)*dy)/ls;t=Math.max(0,Math.min(1,t));return Math.hypot(px-(x1+t*dx),py-(y1+t*dy));}
 
-    function startSlide() {
-      if (!player.isGrounded) {
-        player.vy = Math.max(player.vy, 780);
-      }
-      if (!player.isSliding) {
-        SFX.slide();
-        player.isSliding = true;
-        const bottom = player.y + player.h;
-        player.h = player.slideH;
-        player.y = bottom - player.h;
-      }
+// ================= DRAW =================
+function draw(){
+  ctx.save();
+  const stage=currentStage();
+  const bandH=Math.ceil(BASE_GROUND_Y/stage.sky.length);
+  stage.sky.forEach((c,i)=>pxRect(0,i*bandH,canvas.width,bandH,c));
+  stars.forEach(st=>{if(Math.sin(Date.now()*.005+st.phase)>-.2)pxRect(st.x,st.y,st.size,st.size,st.size===3?'#fef08a':'#e0f2fe');});
+  pxRect(0,BASE_GROUND_Y-36,canvas.width,36,stage.water);pxRect(0,BASE_GROUND_Y-36,canvas.width,4,stage.wave);
+  for(let wx=-Math.round((worldScroll*.6)%48);wx<canvas.width;wx+=48){pxRect(wx,BASE_GROUND_Y-26,24,3,stage.wave);pxRect(wx+12,BASE_GROUND_Y-14,20,3,stage.accent);}
+  for(let c=0;c<5;c++){const cx=((c*230-worldScroll*.14)%1050+1050)%1050-120,cy=44+(c%3)*32;pxRect(cx+15,cy,54,9,'#fbcfe8');pxRect(cx+3,cy+9,78,12,'#ffffff');pxRect(cx+9,cy+21,66,6,'#93c5fd');}
+  const tp=132,to=worldScroll*.28,ft=Math.floor(to/tp)-1,lt=ft+Math.ceil(canvas.width/tp)+3;
+  const hash=n=>{const x=Math.sin(n*127.1+78.233)*43758.5453;return x-Math.floor(x);};
+  for(let id=ft;id<=lt;id++){
+    const mx=Math.round(id*tp-to),mh=94+Math.floor(hash(id)*85),topY=BASE_GROUND_Y-mh;
+    pxRect(mx,topY,96,mh,stageIndex===2?'#431407':stageIndex===3?'#334155':'#0f172a');pxRect(mx,topY,4,mh,stage.accent);pxRect(mx,topY,96,6,stage.accent);pxRect(mx+45,topY-18,4,18,'#475569');
+    if(Math.floor(titan.eyePulse*1.7+id)%2===0)pxRect(mx+44,topY-22,6,4,'#f43f5e');
+    for(let wy=topY+18,row=0;wy<BASE_GROUND_Y-40;wy+=18,row++){pxRect(mx+16,wy,10,8,hash(id*11+row)<.4?'#facc15':stage.accent);pxRect(mx+42,wy,10,8,'#1e293b');pxRect(mx+68,wy,10,8,hash(id*13+row)<.4?'#f43f5e':stage.wave);}
+  }
+  if(screenShake>0)ctx.translate(Math.round((Math.random()-.5)*screenShake),Math.round((Math.random()-.5)*screenShake));
+  drawTitan16Bit();drawPlatforms16Bit();
+  debrisList.forEach(d=>{
+    if(d.state!=='FALL')return;
+    const wx=Math.round(d.x+(d.waterSide>0?d.w+5:-23)),wh=BASE_GROUND_Y,flow=Math.floor(Date.now()/90)%12;
+    pxRect(wx-3,0,24,wh,'rgba(8,145,178,.28)');pxRect(wx+4,0,10,wh,'rgba(34,211,238,.42)');
+    for(let wy=flow;wy<BASE_GROUND_Y;wy+=24){pxRect(wx+1,wy,4,9,'#a5f3fc');pxRect(wx+13,wy+8,4,8,'#67e8f9');pxRect(wx+7,wy+17,4,4,'#e0f2fe');}
+    pxRect(wx+5,Math.max(0,d.y+12),8,5,'#ffffff');
+  });
+  debrisList.forEach(d=>{
+    if(d.state==='WARN'){
+      const fl=Math.floor(Date.now()/75)%2===0;
+      pxRect(d.x,0,d.w,BASE_GROUND_Y,fl?'rgba(244,63,94,.22)':'rgba(250,204,21,.14)');pxRect(d.x,BASE_GROUND_Y-12,d.w,12,'#090d16');pxRect(d.x+2,BASE_GROUND_Y-10,d.w-4,8,fl?'#ef4444':'#facc15');
+      const mx=Math.round(d.x+d.w/2-5);pxRect(mx-2,BASE_GROUND_Y-46,14,30,'#090d16');pxRect(mx+1,BASE_GROUND_Y-43,8,16,'#ef4444');pxRect(mx+1,BASE_GROUND_Y-24,8,6,'#facc15');
+    }else{
+      pxRect(d.x,d.y,d.w,d.h,'#090d16');pxRect(d.x+3,d.y+3,d.w-6,d.h-6,'#9a3412');pxRect(d.x+6,d.y+6,d.w-12,d.h-12,'#ea580c');pxRect(d.x+12,d.y+12,d.w-24,d.h-24,'#facc15');pxRect(d.x+18,d.y+18,d.w-36,d.h-36,'#ffffff');pxRect(d.x+12,d.y-14,d.w-24,14,'#f97316');pxRect(d.x+18,d.y-24,d.w-36,12,'#facc15');
     }
-
-    function stopSlide() {
-      if (player.isSliding) {
-        player.isSliding = false;
-        const bottom = player.y + player.h;
-        player.h = player.standH;
-        player.y = bottom - player.h;
-      }
+  });
+  drawPlayerAfterImages();drawQuadrupedShark16Bit();
+  laserList.forEach(l=>{
+    const ex=l.originX+Math.cos(l.angle)*1100,ey=l.originY+Math.sin(l.angle)*1100;
+    if(l.state==='WARN'){
+      const fl=Math.floor(Date.now()/60)%2===0;
+      ctx.save();ctx.strokeStyle=fl?'#f43f5e':'#facc15';ctx.lineWidth=4;ctx.setLineDash([12,10]);ctx.beginPath();ctx.moveTo(l.originX,l.originY);ctx.lineTo(ex,ey);ctx.stroke();ctx.restore();
+      const tx=Math.round(l.targetX),ty=Math.round(l.targetY),rc=fl?'#f43f5e':'#facc15';
+      pxRect(tx-20,ty-20,12,4,rc);pxRect(tx-20,ty-20,4,12,rc);pxRect(tx+8,ty-20,12,4,rc);pxRect(tx+16,ty-20,4,12,rc);pxRect(tx-20,ty+16,12,4,rc);pxRect(tx-20,ty+8,4,12,rc);pxRect(tx+8,ty+16,12,4,rc);pxRect(tx+16,ty+8,4,12,rc);pxRect(tx-3,ty-3,6,6,'#ffffff');
+      ctx.font='bold 12px "Courier New", monospace';ctx.textAlign='center';ctx.fillStyle='#05070e';ctx.fillText('LOCK '+l.step+'/'+l.maxSteps,tx+1,ty-25);ctx.fillStyle=rc;ctx.fillText('LOCK '+l.step+'/'+l.maxSteps,tx,ty-26);
+    }else{
+      [['rgba(244,63,94,.55)',26],['#fb7185',14],['#ffffff',6]].forEach(s=>{ctx.strokeStyle=s[0];ctx.lineWidth=s[1];ctx.beginPath();ctx.moveTo(l.originX,l.originY);ctx.lineTo(ex,ey);ctx.stroke();});
     }
-
-    // ==========================================
-    // TITAN ATTACK PATTERNS
-    // ==========================================
-    function spawnTitanAttack() {
-      // Each boss introduces a different attack combination, with all four in stage 4.
-      const patterns = [
-        ['DEBRIS', 'SHOCKWAVE'],
-        ['DRONE', 'DEBRIS', 'SHOCKWAVE'],
-        ['LASER', 'SHOCKWAVE', 'DEBRIS'],
-        ['DEBRIS', 'LASER', 'SHOCKWAVE', 'DRONE']
-      ];
-      const set = patterns[stageIndex];
-      const attack = set[attackCycle % set.length];
-      attackCycle++;
-      titan.lastAttackType = attack;
-      if (attack === 'DEBRIS') {
-        spawnDebrisPattern();
-        titan.attackCooldown = Math.max(1.55, 2.35 / speedMultiplier);
-      } else if (attack === 'LASER') {
-        spawnTrackingLaserVolley();
-        titan.attackCooldown = Math.max(2.5, 3.5 / speedMultiplier);
-      } else if (attack === 'SHOCKWAVE') {
-        bossHazards.push({ type: 'SHOCKWAVE', x: 900, y: BASE_GROUND_Y - 28, w: 54, h: 28, state: 'WARN', timer: titanFuryMode ? 0.58 : 0.78, speed: titanFuryMode ? 650 : 560 });
-        if (titanFuryMode) bossHazards.push({ type: 'SHOCKWAVE', x: 1110, y: BASE_GROUND_Y - 28, w: 54, h: 28, state: 'WARN', timer: 1.05, speed: 690 });
-        titan.slamHand = titan.slamHand === 'LEFT' ? 'RIGHT' : 'LEFT';
-        titan.slamState = 'RAISE';
-        titan.slamTimer = 0.78;
-        titan.chargeLevel = 0.7;
-        titan.attackCooldown = Math.max(2.2, 3.1 / speedMultiplier);
-      } else {
-        const targetY = Math.max(92, Math.min(BASE_GROUND_Y - 86, player.y + player.h / 2));
-        bossHazards.push({ type: 'DRONE', x: titan.x - 115, y: targetY, w: 38, h: 30, state: 'WARN', timer: titanFuryMode ? 0.52 : 0.7, speed: titanFuryMode ? 530 : 440 });
-        if (titanFuryMode) bossHazards.push({ type: 'DRONE', x: titan.x + 5, y: Math.max(86, Math.min(BASE_GROUND_Y - 120, targetY - 105)), w: 38, h: 30, state: 'WARN', timer: 0.92, speed: 500 });
-        titan.chargeLevel = 0.8;
-        titan.attackCooldown = Math.max(2.3, 3.2 / speedMultiplier);
-      }
-      if (titanFuryMode) titan.attackCooldown *= 0.68;
-      if (bossActive && bossWeakTimer <= 0 && bossWeakCooldown <= 0) {
-        bossAttacksToWeak++;
-        if (bossAttacksToWeak >= (stageIndex === 3 ? 2 : 1)) {
-          bossWeakTimer = 5.5;
-          bossAttacksToWeak = 0;
-          floatingTexts.push({x: 560, y: 205, text: 'CORE EXPOSED! JUMP!', life: 1.4});
-          SFX.dodgeBonus();
-        }
-      }
-    }
-
-    function beginBoss() {
-      bossActive = true;
-      bossMaxHP = stageIndex < 2 ? 2 : 3;
-      bossHP = bossMaxHP;
-      bossWeakTimer = 0;
-      bossWeakCooldown = 0;
-      bossAttacksToWeak = 0;
-      titan.attackCooldown = 1.15;
-      attackCycle = 0;
-      stageBannerTimer = 3.2;
-      floatingTexts.push({x: 450, y: 145, text: 'BOSS INCOMING!', life: 1.8});
-    }
-
-    function hitBossCore() {
-      if (!bossActive || bossWeakTimer <= 0 || bossWeakCooldown > 0 || player.isGrounded) return;
-      const overlaps = player.x + player.w > core.x && player.x < core.x + core.w &&
-        player.y + player.h > core.y && player.y < core.y + core.h;
-      if (!overlaps) return;
-      bossHP--;
-      bossWeakTimer = 0;
-      bossWeakCooldown = 1.8;
-      bossAttacksToWeak = 0;
-      player.vy = -520; // bounce away from the energy core
-      player.jumpsLeft = 1;
-      player.invulnTimer = Math.max(player.invulnTimer, 0.6);
-      screenShake = 16;
-      addScoreBonus(200, core.x, core.y - 18, 'CORE HIT! +200');
-      spawnParticles(core.x + core.w/2, core.y + core.h/2, currentStage().accent, 32);
-      if (bossHP <= 0) {
-        bossActive = false;
-        debrisList = []; laserList = []; bossHazards = [];
-        SFX.dodgeBonus();
-        if (stageIndex === STAGES.length - 1) {
-          gameState = 'VICTORY';
-          if (Math.floor(score) > highScore) {
-            highScore = Math.floor(score);
-            try { localStorage.setItem('shark_parkour_16bit_hs', highScore); } catch(e) {}
-          }
-        } else {
-          gameState = 'TRANSITION';
-          transitionTimer = 3.2;
-        }
-      }
-    }
-
-    function nextStage() {
-      stageIndex++;
-      stageProgress = 0;
-      bossActive = false;
-      titanFuryMode = false;
-      bossWeakTimer = bossWeakCooldown = bossAttacksToWeak = 0;
-      attackCycle = 0;
-      titan.attackCooldown = 1.6;
-      stageBannerTimer = 3.3;
-      speedMultiplier = 1;
-      debrisList = []; laserList = []; bossHazards = [];
-      player.hp = Math.min(player.maxHp, player.hp + 1);
-      player.invulnTimer = 2;
-      player.y = 120; player.vy = 0; player.jumpsLeft = 2;
-      player.isSliding = false; player.h = player.standH;
-      player.inWater = false;
-      Object.keys(keys).forEach(code => {keys[code] = false;});
-      resetPlatforms();
-      gameState = 'PLAYING';
-    }
-
-    function spawnDebrisPattern() {
-      const pattern = Math.floor(Math.random() * 3);
-      const warnTime = Math.max(0.6, 0.9 / speedMultiplier);
-
-      titan.slamHand = titan.slamHand === 'LEFT' ? 'RIGHT' : 'LEFT';
-      titan.slamState = 'RAISE';
-      titan.slamTimer = warnTime;
-
-      const anchorX = Math.max(90, Math.min(480, player.x + 60));
-
-      if (pattern === 0) {
-        [anchorX + 120, anchorX + 10, anchorX - 100].forEach((xPos, idx) => {
-          debrisList.push({
-            x: Math.max(30, Math.min(600, xPos)),
-            w: 54,
-            y: -54,
-            h: 48,
-            waterSide: idx % 2 === 0 ? 1 : -1,
-            warnTimer: warnTime + idx * 0.22,
-            state: 'WARN',
-            impactTimer: 0,
-            scored: false
-          });
-        });
-      } else if (pattern === 1) {
-        [anchorX - 95, anchorX + 95].forEach((xPos) => {
-          debrisList.push({
-            x: Math.max(30, Math.min(600, xPos)),
-            w: 72,
-            y: -54,
-            h: 54,
-            waterSide: xPos < anchorX ? 1 : -1,
-            warnTimer: warnTime,
-            state: 'WARN',
-            impactTimer: 0,
-            scored: false
-          });
-        });
-      } else {
-        debrisList.push({
-          x: Math.max(40, Math.min(560, player.x - 20)),
-          w: 108,
-          y: -60,
-          h: 60,
-          waterSide: 1,
-          warnTimer: warnTime + 0.1,
-          state: 'WARN',
-          impactTimer: 0,
-          scored: false
-        });
-      }
-    }
-
-    // 4-Step Tracking Laser Volley: Locks onto player's last position & follows for 4 steps
-    function spawnTrackingLaserVolley() {
-      const originX = titan.x - 18;
-      const originY = titan.y + 45;
-      const targetX = player.x + player.w / 2;
-      const targetY = player.y + player.h / 2;
-
-      laserList.push({
-        originX,
-        originY,
-        targetX,
-        targetY,
-        angle: Math.atan2(targetY - originY, targetX - originX),
-        step: 1,
-        maxSteps: 4,
-        warnDuration: Math.max(0.42, 0.62 / speedMultiplier),
-        fireDuration: Math.max(0.22, 0.30 / speedMultiplier),
-        timer: Math.max(0.42, 0.62 / speedMultiplier),
-        state: 'WARN'
-      });
-
-      SFX.laserLock(1);
-    }
-
-    function damagePlayer() {
-      if (player.invulnTimer > 0 || gameState !== 'PLAYING') return;
-
-      player.hp--;
-      SFX.hurt();
-      player.invulnTimer = 1.2;
-      screenShake = 16;
-      hitStopTimer = 0.06;
-      spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#ef4444', 22);
-
-      if (player.hp <= 0) {
-        gameState = 'GAMEOVER';
-        if (Math.floor(score) > highScore) {
-          highScore = Math.floor(score);
-          try {
-            localStorage.setItem('shark_parkour_16bit_hs', highScore);
-          } catch (storageError) {
-            // Saving a high score is optional in restricted browser contexts.
-          }
-        }
-      }
-    }
-
-    function addScoreBonus(points, x, y, label) {
-      score += points;
-      SFX.dodgeBonus();
-      floatingTexts.push({
-        x: Math.round(x),
-        y: Math.round(y),
-        text: label,
-        life: 0.75
-      });
-    }
-
-    function spawnParticles(x, y, color, count) {
-      for (let i = 0; i < count; i++) {
-        particles.push({
-          x: Math.round(x),
-          y: Math.round(y),
-          vx: (Math.random() - 0.5) * 340,
-          vy: (Math.random() - 0.85) * 340,
-          size: i % 2 === 0 ? 6 : 4,
-          color,
-          life: 0.35 + Math.random() * 0.25
-        });
-      }
-    }
-
-    // ==========================================
-    // UPDATE LOOP
-    // ==========================================
-    function update(dt) {
-      if (hitStopTimer > 0) {
-        hitStopTimer -= dt;
-        return;
-      }
-
-      titan.eyePulse += dt * 5;
-
-      // Animate Titan Hand Slam
-      if (titan.slamState === 'RAISE') {
-        titan.slamTimer -= dt;
-        if (titan.slamTimer <= 0) {
-          titan.slamState = 'SLAM';
-          titan.slamTimer = 0.25;
-        }
-      } else if (titan.slamState === 'SLAM') {
-        titan.slamTimer -= dt;
-        if (titan.slamTimer <= 0) {
-          titan.slamState = 'RECOVER';
-          titan.slamTimer = 0.45;
-        }
-      } else if (titan.slamState === 'RECOVER') {
-        titan.slamTimer -= dt;
-        if (titan.slamTimer <= 0) {
-          titan.slamState = 'IDLE';
-        }
-      }
-
-      const activeLaser = laserList.find(l => l.state === 'WARN' || l.state === 'FIRE');
-      if (activeLaser) {
-        titan.chargeLevel = activeLaser.state === 'WARN'
-          ? Math.min(1, 0.35 + (activeLaser.step / activeLaser.maxSteps) * 0.65)
-          : 1;
-      } else {
-        titan.chargeLevel = Math.max(0, titan.chargeLevel - dt * 2.5);
-      }
-
-      if (screenShake > 0) {
-        screenShake = Math.max(0, screenShake - dt * 48);
-      }
-
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
-        p.vy += 600 * dt;
-        p.life -= dt;
-        if (p.life <= 0) particles.splice(i, 1);
-      }
-
-      for (let i = floatingTexts.length - 1; i >= 0; i--) {
-        const ft = floatingTexts[i];
-        ft.y -= 45 * dt;
-        ft.life -= dt;
-        if (ft.life <= 0) floatingTexts.splice(i, 1);
-      }
-
-      if (gameState === 'TRANSITION') {
-        transitionTimer -= dt;
-        if (transitionTimer <= 0) nextStage();
-        return;
-      }
-      if (gameState !== 'PLAYING') return;
-      campaignTime += dt;
-      stageBannerTimer = Math.max(0, stageBannerTimer - dt);
-      bossWeakTimer = Math.max(0, bossWeakTimer - dt);
-      bossWeakCooldown = Math.max(0, bossWeakCooldown - dt);
-      if (!bossActive) {
-        stageProgress += dt * 18;
-        if (stageProgress >= STAGE_TARGET) beginBoss();
-      }
-
-      const scrollSpeed = 290 * speedMultiplier;
-      score += dt * 18 * speedMultiplier;
-      speedMultiplier = 1 + Math.min(0.7, stageIndex * 0.12 + stageProgress / 1150);
-      if (!titanFuryMode && bossActive && stageIndex === 3 && bossHP <= 2) {
-        titanFuryMode = true;
-        furyBannerTimer = 3.2;
-        titan.attackCooldown = Math.min(titan.attackCooldown, 0.65);
-        titan.chargeLevel = 1;
-        screenShake = Math.max(screenShake, 10);
-        spawnParticles(titan.x - 18, titan.y + 45, '#facc15', 28);
-        floatingTexts.push({ x: 450, y: 150, text: 'TITAN FURY UNLEASHED!', life: 2.2 });
-        SFX.laserFire();
-      }
-      if (furyBannerTimer > 0) furyBannerTimer = Math.max(0, furyBannerTimer - dt);
-      worldScroll += scrollSpeed * dt;
-
-
-      // Scroll Platforms & Generate New Sections
-      for (let i = platforms.length - 1; i >= 0; i--) {
-        platforms[i].x -= scrollSpeed * dt;
-        if (platforms[i].x + platforms[i].w < -120) {
-          platforms.splice(i, 1);
-        }
-      }
-      nextPlatformX -= scrollSpeed * dt;
-      while (nextPlatformX < 1300) {
-        spawnNextPlatformSection();
-      }
-
-      // Left & Right Arrow / A & D Controls
-      const moveLeft = keys['ArrowLeft'] || keys['KeyA'];
-      const moveRight = keys['ArrowRight'] || keys['KeyD'];
-
-      if (moveLeft && !moveRight) {
-        player.vx = -MOVE_SPEED;
-        player.facing = -1;
-      } else if (moveRight && !moveLeft) {
-        player.vx = MOVE_SPEED;
-        player.facing = 1;
-      } else {
-        player.vx = 0;
-      }
-
-      player.x += player.vx * dt;
-      player.x = Math.max(24, Math.min(620, player.x));
-
-      if (player.invulnTimer > 0) {
-        player.invulnTimer -= dt;
-      }
-
-      // Record Sonic-style speed after-images
-      if (!player.isGrounded || player.vx > 0 || player.isSliding) {
-        if (Math.random() < 0.45) {
-          player.afterImages.push({
-            x: player.x,
-            y: player.y,
-            w: player.w,
-            h: player.h,
-            isSpin: !player.isGrounded && !player.isSliding,
-            alpha: 0.45
-          });
-        }
-      }
-      for (let i = player.afterImages.length - 1; i >= 0; i--) {
-        player.afterImages[i].x -= scrollSpeed * 0.4 * dt;
-        player.afterImages[i].alpha -= dt * 2.4;
-        if (player.afterImages[i].alpha <= 0) {
-          player.afterImages.splice(i, 1);
-        }
-      }
-
-      // Running dust trail on ground
-      if (player.isGrounded && Math.random() < 0.35) {
-        particles.push({
-          x: player.x + (player.facing === 1 ? 4 : player.w - 4),
-          y: player.y + player.h - 4,
-          vx: -scrollSpeed * 0.5 + (Math.random() - 0.5) * 40,
-          vy: -20 - Math.random() * 40,
-          size: 4,
-          color: '#e2e8f0',
-          life: 0.22
-        });
-      }
-
-      // Water currents beside falling debris automatically carry the shark upward.
-      const wasInWater = player.inWater;
-      player.inWater = debrisList.some((d) => {
-        if (d.state !== 'FALL') return false;
-        const waterX = d.x + (d.waterSide > 0 ? d.w + 5 : -23);
-        const waterTop = 0;
-        const waterBottom = BASE_GROUND_Y;
-        return player.x + player.w > waterX &&
-          player.x < waterX + 18 &&
-          player.y + player.h > waterTop &&
-          player.y < waterBottom;
-      });
-
-      // Vertical Gravity & One-Way Platform Landing
-      const prevBottom = player.y + player.h;
-      if (player.inWater) {
-        player.vy = -460;
-        player.isGrounded = false;
-        if (player.isSliding) stopSlide();
-        if (wasInWater !== true) {
-          const usedColumn = debrisList.find(d => d.state === 'FALL' && player.x + player.w > d.x + (d.waterSide > 0 ? d.w + 5 : -23) && player.x < d.x + (d.waterSide > 0 ? d.w + 5 : -23) + 18);
-          if (usedColumn && !usedColumn.waterScored) {
-            usedColumn.waterScored = true;
-            addScoreBonus(25, player.x + player.w / 2, player.y - 10, 'WATER BOOST!');
-          }
-          spawnParticles(player.x + player.w / 2, player.y + player.h / 2, '#67e8f9', 8);
-        }
-        player.waterBubbleTimer -= dt;
-        if (player.waterBubbleTimer <= 0) {
-          particles.push({
-            x: player.x + player.w / 2 + (Math.random() - 0.5) * 24,
-            y: player.y + player.h,
-            vx: (Math.random() - 0.5) * 28,
-            vy: -90 - Math.random() * 70,
-            size: 3 + Math.floor(Math.random() * 3),
-            color: '#a5f3fc',
-            life: 0.45
-          });
-          player.waterBubbleTimer = 0.08;
-        }
-      } else {
-        player.vy += GRAVITY * dt;
-      }
-      player.y += player.vy * dt;
-      player.y = Math.max(16, player.y);
-      if (player.y === 16 && player.vy < 0) player.vy = 0;
-      player.isGrounded = false;
-
-      if (player.vy >= 0) {
-        for (let i = 0; i < platforms.length; i++) {
-          const plat = platforms[i];
-          const horizOverlap = player.x + player.w - 8 > plat.x && player.x + 8 < plat.x + plat.w;
-          if (horizOverlap && prevBottom <= plat.y + 12 && player.y + player.h >= plat.y) {
-            player.y = plat.y - player.h;
-            player.vy = 0;
-            player.isGrounded = true;
-            player.jumpsLeft = 2;
-            break;
-          }
-        }
-      }
-
-      // Pit Recovery
-      if (player.y > canvas.height + 20) {
-        damagePlayer();
-        if (gameState === 'PLAYING') {
-          player.y = 120;
-          player.vy = 0;
-          player.jumpsLeft = 2;
-        }
-      }
-
-      const animSpeed = player.vx > 0 ? 23 : player.vx < 0 ? 12 : 18;
-      player.runCycle += dt * animSpeed * speedMultiplier;
-      if (player.inWater) {
-        player.spinAngle = -Math.PI / 2;
-      } else if (!player.isGrounded) {
-        player.spinAngle += dt * 26 * player.facing;
-      } else {
-        player.spinAngle = 0;
-      }
-
-      // Reach the exposed core with an airborne spin jump to damage the boss.
-      hitBossCore();
-      if (gameState !== 'PLAYING') return;
-
-      // Titan Attack Timer
-      titan.attackCooldown -= dt;
-      if (titan.attackCooldown <= 0) {
-        spawnTitanAttack();
-      }
-
-      // Update Falling Debris
-      for (let i = debrisList.length - 1; i >= 0; i--) {
-        const d = debrisList[i];
-        if (d.state === 'WARN') {
-          d.warnTimer -= dt;
-          if (d.warnTimer <= 0) {
-            d.state = 'FALL';
-          }
-        } else if (d.state === 'FALL') {
-          d.y += 1600 * dt;
-          let targetY = BASE_GROUND_Y;
-          for (let j = 0; j < platforms.length; j++) {
-            const p = platforms[j];
-            if (d.x + d.w > p.x && d.x < p.x + p.w && p.y <= targetY) {
-              targetY = p.y;
-            }
-          }
-          if (d.y + d.h >= targetY) {
-            d.y = targetY - d.h;
-            d.state = 'IMPACT';
-            d.impactTimer = 0.22;
-            SFX.debrisImpact();
-            screenShake = Math.max(screenShake, 8);
-            spawnParticles(d.x + d.w / 2, targetY, '#f97316', 14);
-
-            const distToPlayer = Math.abs((player.x + player.w / 2) - (d.x + d.w / 2));
-            if (!d.scored && distToPlayer < 130 && player.invulnTimer <= 0) {
-              d.scored = true;
-              addScoreBonus(50, player.x + 20, player.y - 12, '+50 DODGE!');
-            }
-          }
-        } else if (d.state === 'IMPACT') {
-          d.impactTimer -= dt;
-          if (d.impactTimer <= 0) {
-            debrisList.splice(i, 1);
-            continue;
-          }
-        }
-
-        if (d.state === 'FALL' || d.state === 'IMPACT') {
-          if (
-            player.x + 6 < d.x + d.w &&
-            player.x + player.w - 6 > d.x &&
-            player.y + 4 < d.y + d.h &&
-            player.y + player.h > d.y
-          ) {
-            damagePlayer();
-          }
-        }
-      }
-
-      // New Titan attacks: a ground shockwave (jump over it) and an electric drone (dodge vertically).
-      for (let i = bossHazards.length - 1; i >= 0; i--) {
-        const h = bossHazards[i];
-        if (h.state === 'WARN') {
-          h.timer -= dt;
-          if (h.timer <= 0) {
-            h.state = 'MOVE';
-            if (h.type === 'SHOCKWAVE') SFX.debrisImpact();
-            else SFX.laserFire();
-          }
-        } else {
-          h.x -= h.speed * dt;
-          if (h.type === 'DRONE') h.y += Math.sin(titan.eyePulse * 1.2 + i) * 18 * dt;
-          const overlap = player.x + player.w - 7 > h.x && player.x + 7 < h.x + h.w &&
-            player.y + player.h - 4 > h.y && player.y + 4 < h.y + h.h;
-          if (overlap) {
-            h.hitPlayer = true;
-            damagePlayer();
-          }
-          if (h.x + h.w < -20) {
-            if (h.type === 'SHOCKWAVE' && !h.hitPlayer && player.invulnTimer <= 0) addScoreBonus(75, player.x + 20, player.y - 14, '+75 JUMPED!');
-            bossHazards.splice(i, 1);
-          }
-        }
-      }
-
-      // Update 4-Step Tracking Lasers
-      const hoverY = Math.round(Math.sin(titan.eyePulse * 0.5) * 6);
-      for (let i = laserList.length - 1; i >= 0; i--) {
-        const l = laserList[i];
-        l.originX = titan.x - 18;
-        l.originY = titan.y + hoverY + 45;
-        l.timer -= dt;
-
-        if (l.state === 'WARN') {
-          l.angle = Math.atan2(l.targetY - l.originY, l.targetX - l.originX);
-          if (l.timer <= 0) {
-            l.state = 'FIRE';
-            l.timer = l.fireDuration;
-            SFX.laserFire();
-            screenShake = Math.max(screenShake, 7);
-            spawnParticles(l.targetX, l.targetY, '#f43f5e', 10);
-          }
-        } else if (l.state === 'FIRE') {
-          const endX = l.originX + Math.cos(l.angle) * 1100;
-          const endY = l.originY + Math.sin(l.angle) * 1100;
-          const px = player.x + player.w / 2;
-          const py = player.y + player.h / 2;
-
-          const dist = pointToSegmentDistance(px, py, l.originX, l.originY, endX, endY);
-          const hitRadius = (player.isSliding ? 10 : 15) + 9;
-          if (dist < hitRadius) {
-            damagePlayer();
-          }
-
-          if (l.timer <= 0) {
-            if (l.step < l.maxSteps) {
-              l.step++;
-              l.targetX = player.x + player.w / 2;
-              l.targetY = player.y + player.h / 2;
-              l.angle = Math.atan2(l.targetY - l.originY, l.targetX - l.originX);
-              l.state = 'WARN';
-              l.timer = l.warnDuration;
-              SFX.laserLock(l.step);
-            } else {
-              laserList.splice(i, 1);
-              if (player.invulnTimer <= 0) {
-                addScoreBonus(100, player.x + 20, player.y - 14, '+100 EVADED x4!');
-              }
-            }
-          }
-        }
-      }
-    }
-
-    function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
-      const dx = x2 - x1;
-      const dy = y2 - y1;
-      const lenSq = dx * dx + dy * dy;
-      let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
-      t = Math.max(0, Math.min(1, t));
-      const projX = x1 + t * dx;
-      const projY = y1 + t * dy;
-      return Math.hypot(px - projX, py - projY);
-    }
-
-    // ==========================================
-    // 16-BIT RENDER LOOP
-    // ==========================================
-    function draw() {
-      ctx.save();
-
-      // Keep the parallax background anchored to the screen during impact shake.
-      // Shake the foreground only (boss, platforms, hazards, player).
-
-      // 1. 16-Bit Segmented Twilight-to-Sunset Sky
-      const stage = currentStage();
-      const skyBands = stage.sky;
-      const bandH = Math.ceil(BASE_GROUND_Y / skyBands.length);
-      skyBands.forEach((col, idx) => {
-        pxRect(0, idx * bandH, canvas.width, bandH, col);
-      });
-
-      // Twinkling Pixel Stars
-      stars.forEach((st) => {
-        const blink = Math.sin(Date.now() * 0.005 + st.phase) > -0.2;
-        if (blink) {
-          pxRect(st.x, st.y, st.size, st.size, st.size === 3 ? '#fef08a' : '#e0f2fe');
-        }
-      });
-
-      // Distant 16-bit Pixel Ocean / Horizon Water Strip
-      pxRect(0, BASE_GROUND_Y - 36, canvas.width, 36, stage.water);
-      pxRect(0, BASE_GROUND_Y - 36, canvas.width, 4, stage.wave);
-      for (let wx = -Math.round((worldScroll * 0.6) % 48); wx < canvas.width; wx += 48) {
-        pxRect(wx, BASE_GROUND_Y - 26, 24, 3, stage.wave);
-        pxRect(wx + 12, BASE_GROUND_Y - 14, 20, 3, stage.accent);
-      }
-
-      // Multi-Layer Parallax Pixel Clouds
-      for (let c = 0; c < 5; c++) {
-        const cx = ((c * 230 - worldScroll * 0.14) % 1050 + 1050) % 1050 - 120;
-        const cy = 44 + (c % 3) * 32;
-        pxRect(cx + 15, cy, 54, 9, '#fbcfe8');
-        pxRect(cx + 3, cy + 9, 78, 12, '#ffffff');
-        pxRect(cx + 9, cy + 21, 66, 6, '#93c5fd');
-      }
-
-      // Distant skyline: stable world-space tile IDs. Each building keeps its
-      // height, windows, and lights as it moves across repeat boundaries.
-      const towerPitch = 132;
-      const towerOffset = worldScroll * 0.28;
-      const firstTower = Math.floor(towerOffset / towerPitch) - 1;
-      const lastTower = firstTower + Math.ceil(canvas.width / towerPitch) + 3;
-      for (let id = firstTower; id <= lastTower; id++) {
-        const mx = Math.round(id * towerPitch - towerOffset);
-        const hash = (n) => {
-          const x = Math.sin(n * 127.1 + 78.233) * 43758.5453;
-          return x - Math.floor(x);
-        };
-        const mh = 94 + Math.floor(hash(id) * 85);
-        const topY = BASE_GROUND_Y - mh;
-        pxRect(mx, topY, 96, mh, currentStageNumber() === 2 ? '#431407' : currentStageNumber() === 3 ? '#334155' : '#0f172a');
-        pxRect(mx, topY, 4, mh, stage.accent);
-        pxRect(mx, topY, 96, 6, stage.accent);
-        pxRect(mx + 45, topY - 18, 4, 18, '#475569');
-        if (Math.floor(titan.eyePulse * 1.7 + id) % 2 === 0) pxRect(mx + 44, topY - 22, 6, 4, '#f43f5e');
-        for (let wy = topY + 18, row = 0; wy < BASE_GROUND_Y - 40; wy += 18, row++) {
-          pxRect(mx + 16, wy, 10, 8, hash(id * 11 + row) < 0.4 ? '#facc15' : stage.accent);
-          pxRect(mx + 42, wy, 10, 8, '#1e293b');
-          pxRect(mx + 68, wy, 10, 8, hash(id * 13 + row) < 0.4 ? '#f43f5e' : stage.wave);
-        }
-      }
-
-      if (screenShake > 0) {
-        const sx = Math.round((Math.random() - 0.5) * screenShake);
-        const sy = Math.round((Math.random() - 0.5) * screenShake);
-        ctx.translate(sx, sy);
-      }
-
-      // 2. Giant 16-Bit Mecha-Titan Boss
-      drawTitan16Bit();
-
-      // 3. Beveled Sonic-Style Checkerboard Platforms
-      drawPlatforms16Bit();
-
-      // 4. Cyan water columns trail beside every falling debris piece.
-      debrisList.forEach((d) => {
-        if (d.state !== 'FALL') return;
-        const waterX = Math.round(d.x + (d.waterSide > 0 ? d.w + 5 : -23));
-        const waterTop = 0;
-        const waterHeight = Math.max(0, BASE_GROUND_Y - waterTop);
-        if (waterHeight <= 0) return;
-        const flow = Math.floor(Date.now() / 90) % 12;
-        pxRect(waterX - 3, waterTop, 24, waterHeight, 'rgba(8, 145, 178, 0.28)');
-        pxRect(waterX + 4, waterTop, 10, waterHeight, 'rgba(34, 211, 238, 0.42)');
-        for (let wy = waterTop + flow; wy < BASE_GROUND_Y; wy += 24) {
-          pxRect(waterX + 1, wy, 4, 9, '#a5f3fc');
-          pxRect(waterX + 13, wy + 8, 4, 8, '#67e8f9');
-          pxRect(waterX + 7, wy + 17, 4, 4, '#e0f2fe');
-        }
-        if (d.state === 'FALL') {
-          pxRect(waterX + 5, Math.max(waterTop, d.y + 12), 8, 5, '#ffffff');
-        }
-      });
-
-      // 5. Draw Debris Warnings & Shaded Pixel Meteors
-      debrisList.forEach((d) => {
-        if (d.state === 'WARN') {
-          const flash = Math.floor(Date.now() / 75) % 2 === 0;
-          pxRect(d.x, 0, d.w, BASE_GROUND_Y, flash ? 'rgba(244, 63, 94, 0.22)' : 'rgba(250, 204, 21, 0.14)');
-          pxRect(d.x, BASE_GROUND_Y - 12, d.w, 12, '#090d16');
-          pxRect(d.x + 2, BASE_GROUND_Y - 10, d.w - 4, 8, flash ? '#ef4444' : '#facc15');
-
-          const midX = Math.round(d.x + d.w / 2 - 5);
-          pxRect(midX - 2, BASE_GROUND_Y - 46, 14, 30, '#090d16');
-          pxRect(midX + 1, BASE_GROUND_Y - 43, 8, 16, '#ef4444');
-          pxRect(midX + 1, BASE_GROUND_Y - 24, 8, 6, '#facc15');
-        } else {
-          pxRect(d.x, d.y, d.w, d.h, '#090d16');
-          pxRect(d.x + 3, d.y + 3, d.w - 6, d.h - 6, '#9a3412');
-          pxRect(d.x + 6, d.y + 6, d.w - 12, d.h - 12, '#ea580c');
-          pxRect(d.x + 12, d.y + 12, d.w - 24, d.h - 24, '#facc15');
-          pxRect(d.x + 18, d.y + 18, d.w - 36, d.h - 36, '#ffffff');
-          pxRect(d.x + 12, d.y - 14, d.w - 24, 14, '#f97316');
-          pxRect(d.x + 18, d.y - 24, d.w - 36, 12, '#facc15');
-        }
-      });
-
-      // 5. Speed After-Images + 16-Bit Quadruped Sonic Shark
-      drawPlayerAfterImages();
-      drawQuadrupedShark16Bit();
-
-      // 6. Draw 4-Step Tracking Lasers & Target Lock Reticles
-      laserList.forEach((l) => {
-        const endX = l.originX + Math.cos(l.angle) * 1100;
-        const endY = l.originY + Math.sin(l.angle) * 1100;
-
-        if (l.state === 'WARN') {
-          const flash = Math.floor(Date.now() / 60) % 2 === 0;
-          ctx.save();
-          ctx.strokeStyle = flash ? '#f43f5e' : '#facc15';
-          ctx.lineWidth = 4;
-          ctx.setLineDash([12, 10]);
-          ctx.beginPath();
-          ctx.moveTo(l.originX, l.originY);
-          ctx.lineTo(endX, endY);
-          ctx.stroke();
-          ctx.restore();
-
-          const tx = Math.round(l.targetX);
-          const ty = Math.round(l.targetY);
-          const retCol = flash ? '#f43f5e' : '#facc15';
-          pxRect(tx - 20, ty - 20, 12, 4, retCol);
-          pxRect(tx - 20, ty - 20, 4, 12, retCol);
-          pxRect(tx + 8, ty - 20, 12, 4, retCol);
-          pxRect(tx + 16, ty - 20, 4, 12, retCol);
-          pxRect(tx - 20, ty + 16, 12, 4, retCol);
-          pxRect(tx - 20, ty + 8, 4, 12, retCol);
-          pxRect(tx + 8, ty + 16, 12, 4, retCol);
-          pxRect(tx + 16, ty + 8, 4, 12, retCol);
-          pxRect(tx - 3, ty - 3, 6, 6, '#ffffff');
-
-          ctx.font = 'bold 12px "Courier New", monospace';
-          ctx.textAlign = 'center';
-          ctx.fillStyle = '#05070e';
-          ctx.fillText(`LOCK ${l.step}/${l.maxSteps}`, tx + 1, ty - 25);
-          ctx.fillStyle = retCol;
-          ctx.fillText(`LOCK ${l.step}/${l.maxSteps}`, tx, ty - 26);
-
-        } else {
-          ctx.strokeStyle = 'rgba(244, 63, 94, 0.55)';
-          ctx.lineWidth = 26;
-          ctx.beginPath();
-          ctx.moveTo(l.originX, l.originY);
-          ctx.lineTo(endX, endY);
-          ctx.stroke();
-
-          ctx.strokeStyle = '#fb7185';
-          ctx.lineWidth = 14;
-          ctx.beginPath();
-          ctx.moveTo(l.originX, l.originY);
-          ctx.lineTo(endX, endY);
-          ctx.stroke();
-
-          ctx.strokeStyle = '#ffffff';
-          ctx.lineWidth = 6;
-          ctx.beginPath();
-          ctx.moveTo(l.originX, l.originY);
-          ctx.lineTo(endX, endY);
-          ctx.stroke();
-        }
-      });
-
-      // New boss projectiles: warning flashes first, then the hazard becomes active.
-      bossHazards.forEach((h) => {
-        const warning = h.state === 'WARN';
-        const pulse = Math.floor(Date.now() / 85) % 2 === 0;
-        if (h.type === 'SHOCKWAVE') {
-          if (warning) {
-            pxRect(0, BASE_GROUND_Y - 8, canvas.width, 5, pulse ? '#facc15' : '#fb7185');
-            ctx.font = 'bold 12px "Courier New", monospace'; ctx.textAlign = 'center';
-            ctx.fillStyle = '#ffffff'; ctx.fillText('JUMP THE SHOCKWAVE!', 450, BASE_GROUND_Y - 18);
-          } else {
-            pxRect(h.x, h.y + 8, h.w, h.h - 8, '#090d16');
-            pxRect(h.x + 5, h.y, h.w - 10, h.h, '#fb923c');
-            pxRect(h.x + 12, h.y - 8, h.w - 24, 8, '#fef08a');
-          }
-        } else {
-          if (warning) {
-            pxRect(h.x - 8, h.y - 8, h.w + 16, h.h + 16, pulse ? 'rgba(250,204,21,.35)' : 'rgba(244,63,94,.25)');
-          }
-          pxRect(h.x, h.y, h.w, h.h, '#090d16');
-          pxRect(h.x + 4, h.y + 4, h.w - 8, h.h - 8, warning ? '#facc15' : '#a855f7');
-          pxRect(h.x + 11, h.y + 9, 7, 6, '#ffffff');
-          pxRect(h.x + 24, h.y + 9, 7, 6, '#ffffff');
-          if (!warning) pxRect(h.x - 10, h.y + 12, 10, 6, '#c084fc');
-        }
-      });
-
-      // 7. Square Pixel Particles & Floating Score Popups
-      particles.forEach((p) => {
-        pxRect(p.x - 1, p.y - 1, p.size + 2, p.size + 2, '#090d16');
-        pxRect(p.x, p.y, p.size, p.size, p.color);
-      });
-
-      floatingTexts.forEach((ft) => {
-        ctx.font = 'bold 15px "Courier New", monospace';
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#090d16';
-        ctx.fillText(ft.text, ft.x + 2, ft.y + 2);
-        ctx.fillStyle = '#facc15';
-        ctx.fillText(ft.text, ft.x, ft.y);
-      });
-
-      // 8. 16-Bit Arcade HUD
-      drawHUD();
-      drawBossCore();
-
-      // 9. Retro CRT Scanline Overlay
-      if (crtEnabled) {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.14)';
-        for (let y = 0; y < canvas.height; y += 4) {
-          ctx.fillRect(0, y, canvas.width, 2);
-        }
-      }
-
-      // 10. Overlays
-      if (gameState === 'PLAYING' && furyBannerTimer > 0) {
-        const pulse = Math.floor(Date.now() / 100) % 2 === 0;
-        pxRect(225, 104, 450, 58, '#05070e');
-        pxRect(229, 108, 442, 50, pulse ? '#7f1d1d' : '#991b1b');
-        ctx.textAlign = 'center';
-        ctx.fillStyle = '#fef08a';
-        ctx.font = 'bold 25px "Courier New", monospace';
-        ctx.fillText('TITAN FURY MODE!', 450, 140);
-      }
-      if (gameState === 'PLAYING' && stageBannerTimer > 0) {
-        ctx.textAlign = 'center';
-        pxRect(185, 77, 530, 34, '#05070e');
-        ctx.font = 'bold 17px "Courier New", monospace';
-        ctx.fillStyle = '#facc15';
-        ctx.fillText(bossActive ? `BOSS: ${BOSS_NAMES[stageIndex]}` : `LEVEL ${stageIndex+1} - ${currentStage().name}`, 450, 100);
-      }
-      if (gameState === 'START') {
-        drawOverlay(
-          'SHARK PARKOUR: 4 LEVELS',
-          'Survive 4 zones. Jump into the exposed boss core!',
-          'PRESS SPACE TO START'
-        );
-      } else if (gameState === 'TRANSITION') {
-        drawOverlay(
-          `LEVEL ${stageIndex+1} CLEARED!`,
-          `BOSS DEFEATED  |  +1 HP  |  SCORE ${Math.floor(score)}`,
-          `NEXT: ${STAGES[stageIndex+1].name}`
-        );
-      } else if (gameState === 'VICTORY') {
-        drawOverlay(
-          'VICTORY! ALL 4 LEVELS!',
-          `FINAL SCORE ${Math.floor(score)}  |  TIME ${Math.floor(campaignTime)}s  |  BEST ${highScore}`,
-          'PRESS SPACE TO PLAY AGAIN'
-        );
-      } else if (gameState === 'GAMEOVER') {
-        drawOverlay(
-          'GAME OVER',
-          `SCORE: ${String(Math.floor(score)).padStart(5, '0')}   |   BEST: ${String(highScore).padStart(5, '0')}`,
-          'PRESS SPACE TO RETRY'
-        );
-      }
-
+  });
+  bossHazards.forEach(drawHazard);
+  particles.forEach(p=>{pxRect(p.x-1,p.y-1,p.size+2,p.size+2,'#090d16');pxRect(p.x,p.y,p.size,p.size,p.color);});
+  floatingTexts.forEach(f=>{ctx.font='bold 15px "Courier New", monospace';ctx.textAlign='center';ctx.fillStyle='#090d16';ctx.fillText(f.text,f.x+2,f.y+2);ctx.fillStyle='#facc15';ctx.fillText(f.text,f.x,f.y);});
+  drawHUD();drawBossCore();
+  if(crtEnabled){ctx.fillStyle='rgba(0,0,0,.14)';for(let y=0;y<canvas.height;y+=4)ctx.fillRect(0,y,canvas.width,2);}
+  if(gameState==='PLAYING'&&furyBannerTimer>0){const pu=Math.floor(Date.now()/100)%2===0;pxRect(225,104,450,58,'#05070e');pxRect(229,108,442,50,pu?'#7f1d1d':'#991b1b');ctx.textAlign='center';ctx.fillStyle='#fef08a';ctx.font='bold 25px "Courier New", monospace';ctx.fillText('TITAN FURY MODE!',450,140);}
+  if(gameState==='PLAYING'&&stageBannerTimer>0){ctx.textAlign='center';pxRect(185,77,530,34,'#05070e');ctx.font='bold 17px "Courier New", monospace';ctx.fillStyle='#facc15';ctx.fillText(bossActive?'BOSS: '+BOSS_NAMES[stageIndex]:'LEVEL '+(stageIndex+1)+' - '+currentStage().name,450,100);}
+  if(gameState==='START')drawOverlay('SHARK PARKOUR: 4 LEVELS','Survive 4 zones. Jump or dash into the exposed boss core!','PRESS SPACE TO START');
+  else if(gameState==='TRANSITION')drawOverlay('LEVEL '+(stageIndex+1)+' CLEARED!','BOSS DEFEATED  |  +1 HP  |  SCORE '+Math.floor(score),'NEXT: '+STAGES[stageIndex+1].name);
+  else if(gameState==='VICTORY')drawOverlay('VICTORY! ALL 4 LEVELS!','FINAL SCORE '+Math.floor(score)+'  |  TIME '+Math.floor(campaignTime)+'s','PRESS SPACE TO PLAY AGAIN');
+  else if(gameState==='GAMEOVER')drawOverlay('GAME OVER','SCORE: '+String(Math.floor(score)).padStart(5,'0'),'PRESS SPACE TO RETRY');
+  ctx.restore();
+}
+
+function drawHazard(h){
+  const warning=h.state==='WARN',pulse=Math.floor(Date.now()/85)%2===0,gy=BASE_GROUND_Y;
+  const wcol=pulse?'#facc15':'#fb7185';
+  ctx.textAlign='center';ctx.font='bold 12px "Courier New", monospace';
+  switch(h.type){
+  case 'SHOCKWAVE':
+    if(warning){pxRect(0,gy-8,canvas.width,5,wcol);ctx.fillStyle='#fff';ctx.fillText('JUMP THE SHOCKWAVE!',450,gy-18);}
+    else{pxRect(h.x,h.y+8,h.w,h.h-8,'#090d16');pxRect(h.x+5,h.y,h.w-10,h.h,'#fb923c');pxRect(h.x+12,h.y-8,h.w-24,8,'#fef08a');}break;
+  case 'DRONE':
+    if(warning)pxRect(h.x-8,h.y-8,h.w+16,h.h+16,pulse?'rgba(250,204,21,.35)':'rgba(244,63,94,.25)');
+    pxRect(h.x,h.y,h.w,h.h,'#090d16');pxRect(h.x+4,h.y+4,h.w-8,h.h-8,warning?'#facc15':'#a855f7');pxRect(h.x+11,h.y+9,7,6,'#fff');pxRect(h.x+24,h.y+9,7,6,'#fff');if(!warning)pxRect(h.x-10,h.y+12,10,6,'#c084fc');break;
+  case 'CRATE':
+    if(warning){pxRect(0,h.y+h.h/2-2,canvas.width,4,wcol);ctx.fillStyle='#fff';ctx.fillText('SLIDE UNDER THE CRATE!',450,h.y-8);}
+    else{pxRect(h.x,h.y,h.w,h.h,'#090d16');pxRect(h.x+3,h.y+3,h.w-6,h.h-6,'#b45309');pxRect(h.x+3,h.y+h.h/2-2,h.w-6,4,'#78350f');pxRect(h.x+h.w/2-2,h.y+3,4,h.h-6,'#78350f');pxRect(h.x+3,h.y+3,h.w-6,3,'#fbbf24');pxRect(h.x-10,h.y+14,10,4,'#d97706');}break;
+  case 'WRECKBALL':
+    if(warning){pxRect(h.ax-70,0,140,gy,'rgba(250,204,21,'+(pulse?.18:.08)+')');ctx.fillStyle='#fff';ctx.fillText('WRECKING BALL!',h.ax,gy-40);}
+    else{
+      ctx.strokeStyle='#94a3b8';ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(h.ax,0);ctx.lineTo(h.x,h.y);ctx.stroke();
+      pxRect(h.ax-8,0,16,10,'#475569');
+      pxRect(h.x-h.r-3,h.y-h.r-3,h.r*2+6,h.r*2+6,'#090d16');pxRect(h.x-h.r,h.y-h.r,h.r*2,h.r*2,'#64748b');pxRect(h.x-h.r+5,h.y-h.r+5,h.r*2-10,h.r*2-10,'#94a3b8');pxRect(h.x-h.r+8,h.y-h.r+8,8,8,'#e2e8f0');
+    }break;
+  case 'URCHIN':
+    if(warning){pxRect(0,gy-8,canvas.width,5,wcol);ctx.fillStyle='#fff';ctx.fillText('HOP THE URCHIN!',450,gy-18);}
+    else{pxRect(h.x,h.y,h.w,h.h,'#090d16');pxRect(h.x+4,h.y+4,h.w-8,h.h-8,'#f472b6');pxRect(h.x-6,h.y+12,6,6,'#f472b6');pxRect(h.x+h.w,h.y+12,6,6,'#f472b6');pxRect(h.x+12,h.y-6,6,6,'#f472b6');pxRect(h.x+12,h.y+h.h,6,6,'#f472b6');pxRect(h.x+10,h.y+10,4,4,'#fff');pxRect(h.x+18,h.y+10,4,4,'#fff');}break;
+  case 'JELLY':
+    if(warning){pxRect(canvas.width-30,h.baseY-10,30,50,pulse?'rgba(250,204,21,.35)':'rgba(244,63,94,.25)');}
+    else{pxRect(h.x,h.y,h.w,h.h*.7,'#090d16');pxRect(h.x+3,h.y+3,h.w-6,h.h*.7-4,'#c084fc');pxRect(h.x+8,h.y+8,5,5,'#fff');pxRect(h.x+17,h.y+8,5,5,'#fff');
+      for(let k=0;k<3;k++)pxRect(h.x+4+k*9,h.y+h.h*.7,3,10+((Math.floor(Date.now()/120)+k)%2)*4,'#e9d5ff');}break;
+  case 'DIVE':
+    if(warning){
+      ctx.save();ctx.strokeStyle=wcol;ctx.lineWidth=4;ctx.setLineDash([14,10]);ctx.beginPath();ctx.moveTo(h.sx,h.sy);ctx.lineTo(h.tx-(gy-h.ty),gy);ctx.stroke();ctx.restore();
+      const rx=Math.round(h.tx),ry=Math.round(h.ty);
+      pxRect(rx-16,ry-16,32,4,wcol);pxRect(rx-16,ry+12,32,4,wcol);pxRect(rx-16,ry-16,4,32,wcol);pxRect(rx+12,ry-16,4,32,wcol);
+      ctx.fillStyle='#fff';ctx.fillText('DIVE BOMB!',rx,ry-26);
+    }else{
+      ctx.save();ctx.translate(Math.round(h.x),Math.round(h.y));ctx.rotate(Math.PI/4);
+      const fl=Math.floor(Date.now()/60)%2===0;
+      pxRect(-9,-60,18,28,fl?'rgba(250,204,21,.75)':'rgba(249,115,22,.75)');pxRect(-13,-44,26,22,'#f97316');pxRect(-7,-62,14,14,'#fef08a');
+      pxRect(-18,-24,36,46,'#05070e');pxRect(-15,-21,30,40,'#334155');pxRect(-15,-21,30,7,'#64748b');
+      pxRect(-12,2,8,6,'#f43f5e');pxRect(-1,2,8,6,'#f43f5e');pxRect(10,2,4,6,'#f43f5e');
+      pxRect(-11,12,22,14,'#cbd5e1');pxRect(-5,24,10,8,'#facc15');
       ctx.restore();
+    }break;
+  case 'GEYSER':
+    if(warning){pxRect(h.x,gy-6,h.w,6,wcol);pxRect(h.x+h.w/2-3,gy-30,6,18,'#ef4444');}
+    else{pxRect(h.x,h.y,h.w,h.h,'#7c2d12');pxRect(h.x+6,h.y,h.w-12,h.h,'#ea580c');pxRect(h.x+14,h.y,h.w-28,h.h,'#fef08a');}break;
+  case 'FIREBALL':
+    if(warning){ctx.fillStyle='#fff';ctx.fillText('INCOMING!',h.landX,gy-44);pxRect(h.landX-26,gy-6,52,6,wcol);pxRect(h.x-14,h.y-14,h.w+28,h.h+28,pulse?'rgba(250,204,21,.3)':'rgba(244,63,94,.25)');}
+    pxRect(h.x,h.y,h.w,h.h,'#090d16');pxRect(h.x+3,h.y+3,h.w-6,h.h-6,'#ea580c');pxRect(h.x+8,h.y+8,h.w-16,h.h-16,'#fef08a');pxRect(h.x+h.w,h.y+8,10,12,'#f97316');break;
+  case 'EXPLODE':
+    pxRect(h.x,h.y,h.w,h.h,'#ea580c');pxRect(h.x+10,h.y+8,h.w-20,h.h-8,'#facc15');pxRect(h.x+22,h.y+18,h.w-44,h.h-18,'#fff');break;
+  case 'ICESPIKE':
+    if(warning){pxRect(h.x-6,0,h.w+12,10,wcol);pxRect(h.x+h.w/2-2,14,4,gy-30,'rgba(224,242,254,'+(pulse?.35:.15)+')');pxRect(h.x,gy-6,h.w,6,wcol);}
+    else{pxRect(h.x-2,h.y-2,h.w+4,h.h+4,'#090d16');pxRect(h.x,h.y,h.w,h.h*.5,'#bae6fd');pxRect(h.x+4,h.y+h.h*.5,h.w-8,h.h*.3,'#7dd3fc');pxRect(h.x+8,h.y+h.h*.8,h.w-16,h.h*.2,'#e0f2fe');}break;
+  case 'GUST':
+    if(warning){ctx.fillStyle='#e0f2fe';ctx.fillText('BLIZZARD GUST! RUN RIGHT!',450,170);pxRect(0,180,canvas.width,3,wcol);}
+    else{for(let k=0;k<14;k++){const sx=((k*97-Date.now()*.9)%1000+1000)%1000-50,sy=60+((k*53)%300);pxRect(sx,sy,60,3,'rgba(224,242,254,.7)');pxRect(sx+20,sy+8,36,2,'rgba(186,230,253,.6)');}
+      ctx.fillStyle='#e0f2fe';ctx.fillText('<<< GUST <<<',450,170);}break;
+  }
+}
+
+function drawPlatforms16Bit(){
+  const ts=24;
+  platforms.forEach(pl=>{
+    const sx=Math.round(pl.x),sy=Math.round(pl.y),sw=Math.round(pl.w),sh=Math.round(pl.h);
+    pxRect(sx-2,sy-2,sw+4,sh+4,'#090d16');
+    for(let bx=0;bx<sw;bx+=ts)for(let by=12;by<sh;by+=ts){
+      const ci=Math.floor((bx+worldScroll)/ts)+Math.floor(by/ts),il=ci%2===0,dw=Math.min(ts,sw-bx),dh=Math.min(ts,sh-by);
+      pxRect(sx+bx,sy+by,dw,dh,il?currentStage().tile:currentStage().tileDark);
+      if(il&&dw>6&&dh>6){pxRect(sx+bx,sy+by,dw,3,'#d97706');pxRect(sx+bx,sy+by,3,dh,'#d97706');}
     }
+    pxRect(sx,sy,sw,12,currentStage().top);pxRect(sx,sy,sw,6,currentStage().topLight);pxRect(sx,sy,sw,3,currentStage().wave);
+    for(let gx=0;gx<sw-6;gx+=12)pxRect(sx+gx,sy+12,6,3,currentStage().tileDark);
+  });
+}
 
-    function drawPlatforms16Bit() {
-      const tileSize = 24;
-
-      platforms.forEach((plat) => {
-        const sx = Math.round(plat.x);
-        const sy = Math.round(plat.y);
-        const sw = Math.round(plat.w);
-        const sh = Math.round(plat.h);
-
-        pxRect(sx - 2, sy - 2, sw + 4, sh + 4, '#090d16');
-
-        for (let bx = 0; bx < sw; bx += tileSize) {
-          for (let by = 12; by < sh; by += tileSize) {
-            const colIdx = Math.floor((bx + worldScroll) / tileSize) + Math.floor(by / tileSize);
-            const isLight = colIdx % 2 === 0;
-            const drawW = Math.min(tileSize, sw - bx);
-            const drawH = Math.min(tileSize, sh - by);
-
-            pxRect(sx + bx, sy + by, drawW, drawH, isLight ? currentStage().tile : currentStage().tileDark);
-            if (isLight && drawW > 6 && drawH > 6) {
-              pxRect(sx + bx, sy + by, drawW, 3, '#d97706');
-              pxRect(sx + bx, sy + by, 3, drawH, '#d97706');
-            }
-          }
-        }
-
-        pxRect(sx, sy, sw, 12, currentStage().top);
-        pxRect(sx, sy, sw, 6, currentStage().topLight);
-        pxRect(sx, sy, sw, 3, currentStage().wave);
-
-        for (let gx = 0; gx < sw - 6; gx += 12) {
-          pxRect(sx + gx, sy + 12, 6, 3, currentStage().tileDark);
-        }
-      });
+function drawTitan16Bit(){
+  const hoverY=Math.round(Math.sin(titan.eyePulse*.5)*6),tx=titan.x,ty=titan.y+hoverY;
+  pxRect(tx-118,ty+14,236,214,'#05070e');pxRect(tx-114,ty+18,228,210,'#1e293b');pxRect(tx-96,ty+30,192,180,'#0f172a');
+  pxRect(tx-84,ty+48,36,6,'#334155');pxRect(tx-84,ty+62,36,6,'#334155');pxRect(tx+48,ty+48,36,6,'#334155');pxRect(tx+48,ty+62,36,6,'#334155');
+  pxRect(tx-138,ty+2,54,42,'#05070e');pxRect(tx-134,ty+6,46,34,'#312e81');pxRect(tx-134,ty+6,46,6,'#6366f1');
+  pxRect(tx+84,ty+2,54,42,'#05070e');pxRect(tx+88,ty+6,46,34,'#312e81');pxRect(tx+88,ty+6,46,6,'#6366f1');
+  pxRect(tx-58,ty-76,116,90,'#05070e');pxRect(tx-54,ty-72,108,82,'#1e293b');pxRect(tx-54,ty-72,108,8,'#475569');
+  pxRect(tx-76,ty-98,26,32,'#05070e');pxRect(tx-72,ty-94,20,26,'#64748b');pxRect(tx-86,ty-116,20,24,'#cbd5e1');
+  pxRect(tx+50,ty-98,26,32,'#05070e');pxRect(tx+52,ty-94,20,26,'#64748b');pxRect(tx+66,ty-116,20,24,'#cbd5e1');
+  const vc=Math.floor(Date.now()/110)%2===0?currentStage().accent:'#fb7185';
+  pxRect(tx-46,ty-45,74,20,'#05070e');pxRect(tx-42,ty-42,66,14,vc);pxRect(tx-18+Math.round(Math.sin(Date.now()*.008)*18),ty-39,16,6,'#fff');
+  const cx=tx-18,cy=ty+45;
+  pxRect(cx-28,cy-28,56,56,'#05070e');pxRect(cx-24,cy-24,48,48,'#334155');pxRect(cx-18,cy-18,36,36,titan.chargeLevel>.1?currentStage().accent:'#881337');
+  if(titan.chargeLevel>.15){const inn=Math.round(12+titan.chargeLevel*20);pxRect(cx-inn/2,cy-inn/2,inn,inn,'#fff');}
+  const ac=currentStage().accent;
+  if(stageIndex===0){pxRect(tx-48,ty-110,8,20,'#64748b');pxRect(tx+40,ty-110,8,20,'#64748b');pxRect(tx-52,ty-118,16,9,ac);pxRect(tx+36,ty-118,16,9,ac);}
+  else if(stageIndex===1){for(const s of[-1,1]){const fx=tx+s*85;pxRect(fx-8,ty-76,16,42,'#0f766e');pxRect(fx+s*12-6,ty-105,12,49,ac);pxRect(fx+s*22-5,ty-120,10,27,'#f472b6');}}
+  else if(stageIndex===2){pxRect(tx-68,ty-115,20,31,'#9a3412');pxRect(tx-63,ty-131,11,19,ac);pxRect(tx+48,ty-115,20,31,'#9a3412');pxRect(tx+53,ty-131,11,19,ac);}
+  else{for(const s of[-1,1]){pxRect(tx+s*73-5,ty-135,12,49,'#334155');pxRect(tx+s*73-7,ty-143,16,16,ac);pxRect(tx+s*73-3,ty-156,8,15,'#fff');}}
+  drawTitanHand(tx-144,ty+48,'LEFT',hoverY);drawTitanHand(tx+114,ty+48,'RIGHT',-hoverY);
+}
+function drawTitanHand(bx,by,side,io){
+  let hx=bx,hy=by+Math.round(io*.7);
+  if(titan.slamHand===side&&titan.slamState!=='IDLE'){if(titan.slamState==='RAISE'){hy-=108;hx-=18;}else if(titan.slamState==='SLAM'){hy=BASE_GROUND_Y-54;hx-=36;}else if(titan.slamState==='RECOVER')hy-=36;}
+  pxRect(hx-30,hy-24,60,48,'#05070e');pxRect(hx-27,hy-21,54,42,'#1e293b');pxRect(hx-24,hy-18,48,8,'#64748b');pxRect(hx-21,hy-10,42,26,'#334155');
+  const kc=titan.slamHand===side&&titan.slamState!=='IDLE'?'#facc15':'#f43f5e';
+  pxRect(hx-18,hy+9,9,6,kc);pxRect(hx-3,hy+9,9,6,kc);pxRect(hx+12,hy+9,9,6,kc);
+  pxRect(hx-21,hy+21,9,16,'#cbd5e1');pxRect(hx-3,hy+21,9,16,'#cbd5e1');pxRect(hx+15,hy+21,9,16,'#cbd5e1');
+}
+function drawPlayerAfterImages(){
+  player.afterImages.forEach(im=>{ctx.save();ctx.globalAlpha=Math.max(0,im.alpha*.55);if(im.isSpin)pxRect(im.x+9,im.y,36,36,'#38bdf8');else pxRect(im.x,im.y+4,im.w,im.h-4,'#38bdf8');ctx.restore();});
+}
+function drawDashShark(){
+  const cx=Math.round(player.x+player.w/2),cy=Math.round(player.y+player.h/2),now=Date.now();
+  const flash=Math.floor(now/55)%2===0;           // i-frame flash: light blue <-> dark blue
+  const A=flash?'#7dd3fc':'#1e3a8a',B=flash?'#1e3a8a':'#7dd3fc';
+  const L=Math.round(150*Math.max(0,player.dashTimer)/DASH_TIME);
+  ctx.save();ctx.translate(cx,cy);ctx.scale(player.dashDir,1);
+  if(L>14){ // water jet streaming out behind the shark
+    pxRect(-40-L,-10,L,20,'rgba(8,145,178,.5)');
+    pxRect(-40-L*.85,-7,L*.85,14,'rgba(34,211,238,.75)');
+    pxRect(-40-L*.6,-3,L*.6,6,'#e0f2fe');
+    pxRect(-46,-15,8,30,'#a5f3fc');pxRect(-44,-9,5,18,'#ffffff');
+    for(let k=0;k<9;k++){
+      const dx=-48-((now/22+k*41)%L),dy=((k*7)%5-2)*6+((k%2)?4:-4);
+      pxRect(dx,dy,k%2?4:6,k%2?4:3,k%3===0?'#ffffff':k%3===1?'#a5f3fc':'#67e8f9');
     }
-
-    function drawTitan16Bit() {
-      const hoverY = Math.round(Math.sin(titan.eyePulse * 0.5) * 6);
-      const tx = titan.x;
-      const ty = titan.y + hoverY;
-
-      pxRect(tx - 118, ty + 14, 236, 214, '#05070e');
-      pxRect(tx - 114, ty + 18, 228, 210, '#1e293b');
-      pxRect(tx - 96, ty + 30, 192, 180, '#0f172a');
-      pxRect(tx - 84, ty + 48, 36, 6, '#334155');
-      pxRect(tx - 84, ty + 62, 36, 6, '#334155');
-      pxRect(tx + 48, ty + 48, 36, 6, '#334155');
-      pxRect(tx + 48, ty + 62, 36, 6, '#334155');
-
-      pxRect(tx - 138, ty + 2, 54, 42, '#05070e');
-      pxRect(tx - 134, ty + 6, 46, 34, '#312e81');
-      pxRect(tx - 134, ty + 6, 46, 6, '#6366f1');
-
-      pxRect(tx + 84, ty + 2, 54, 42, '#05070e');
-      pxRect(tx + 88, ty + 6, 46, 34, '#312e81');
-      pxRect(tx + 88, ty + 6, 46, 6, '#6366f1');
-
-      pxRect(tx - 58, ty - 76, 116, 90, '#05070e');
-      pxRect(tx - 54, ty - 72, 108, 82, '#1e293b');
-      pxRect(tx - 54, ty - 72, 108, 8, '#475569');
-
-      pxRect(tx - 76, ty - 98, 26, 32, '#05070e');
-      pxRect(tx - 72, ty - 94, 20, 26, '#64748b');
-      pxRect(tx - 86, ty - 116, 20, 24, '#cbd5e1');
-
-      pxRect(tx + 50, ty - 98, 26, 32, '#05070e');
-      pxRect(tx + 52, ty - 94, 20, 26, '#64748b');
-      pxRect(tx + 66, ty - 116, 20, 24, '#cbd5e1');
-
-      const visorCol = Math.floor(Date.now() / 110) % 2 === 0 ? currentStage().accent : '#fb7185';
-      pxRect(tx - 46, ty - 45, 74, 20, '#05070e');
-      pxRect(tx - 42, ty - 42, 66, 14, visorCol);
-      const scanX = Math.round(Math.sin(Date.now() * 0.008) * 18);
-      pxRect(tx - 18 + scanX, ty - 39, 16, 6, '#ffffff');
-
-      const cx = tx - 18;
-      const cy = ty + 45;
-      pxRect(cx - 28, cy - 28, 56, 56, '#05070e');
-      pxRect(cx - 24, cy - 24, 48, 48, '#334155');
-      pxRect(cx - 18, cy - 18, 36, 36, titan.chargeLevel > 0.1 ? currentStage().accent : '#881337');
-
-      if (titan.chargeLevel > 0.15) {
-        const inner = Math.round(12 + titan.chargeLevel * 20);
-        pxRect(cx - inner / 2, cy - inner / 2, inner, inner, '#ffffff');
-      }
-
-      // Distinctive silhouettes for the four encounters; keep the original Titan sprite.
-      const accent = currentStage().accent;
-      if (stageIndex === 0) { // Harbor Sentinel: antennae and neon beacon
-        pxRect(tx - 48, ty - 110, 8, 20, '#64748b');
-        pxRect(tx + 40, ty - 110, 8, 20, '#64748b');
-        pxRect(tx - 52, ty - 118, 16, 9, accent);
-        pxRect(tx + 36, ty - 118, 16, 9, accent);
-      } else if (stageIndex === 1) { // Coral Warden: bright branching fins
-        for (const side of [-1, 1]) {
-          const fx = tx + side * 85;
-          pxRect(fx - 8, ty - 76, 16, 42, '#0f766e');
-          pxRect(fx + side * 12 - 6, ty - 105, 12, 49, accent);
-          pxRect(fx + side * 22 - 5, ty - 120, 10, 27, '#f472b6');
-        }
-      } else if (stageIndex === 2) { // Magma Colossus: glowing horns
-        pxRect(tx - 68, ty - 115, 20, 31, '#9a3412');
-        pxRect(tx - 63, ty - 131, 11, 19, accent);
-        pxRect(tx + 48, ty - 115, 20, 31, '#9a3412');
-        pxRect(tx + 53, ty - 131, 11, 19, accent);
-      } else { // Abyssal Titan: lightning prongs
-        for (const side of [-1, 1]) {
-          pxRect(tx + side*73 - 5, ty - 135, 12, 49, '#334155');
-          pxRect(tx + side*73 - 7, ty - 143, 16, 16, accent);
-          pxRect(tx + side*73 - 3, ty - 156, 8, 15, '#ffffff');
-        }
-      }
-      drawTitanHand16Bit(tx - 144, ty + 48, 'LEFT', hoverY);
-      drawTitanHand16Bit(tx + 114, ty + 48, 'RIGHT', -hoverY);
-    }
-
-    function drawTitanHand16Bit(baseX, baseY, side, idleOffset) {
-      let hx = baseX;
-      let hy = baseY + Math.round(idleOffset * 0.7);
-
-      if (titan.slamHand === side && titan.slamState !== 'IDLE') {
-        if (titan.slamState === 'RAISE') {
-          hy -= 108;
-          hx -= 18;
-        } else if (titan.slamState === 'SLAM') {
-          hy = BASE_GROUND_Y - 54;
-          hx -= 36;
-        } else if (titan.slamState === 'RECOVER') {
-          hy -= 36;
-        }
-      }
-
-      pxRect(hx - 30, hy - 24, 60, 48, '#05070e');
-      pxRect(hx - 27, hy - 21, 54, 42, '#1e293b');
-      pxRect(hx - 24, hy - 18, 48, 8, '#64748b');
-      pxRect(hx - 21, hy - 10, 42, 26, '#334155');
-
-      const knuckCol = titan.slamHand === side && titan.slamState !== 'IDLE' ? '#facc15' : '#f43f5e';
-      pxRect(hx - 18, hy + 9, 9, 6, knuckCol);
-      pxRect(hx - 3, hy + 9, 9, 6, knuckCol);
-      pxRect(hx + 12, hy + 9, 9, 6, knuckCol);
-
-      pxRect(hx - 21, hy + 21, 9, 16, '#cbd5e1');
-      pxRect(hx - 3, hy + 21, 9, 16, '#cbd5e1');
-      pxRect(hx + 15, hy + 21, 9, 16, '#cbd5e1');
-    }
-
-    function drawPlayerAfterImages() {
-      player.afterImages.forEach((img) => {
-        ctx.save();
-        ctx.globalAlpha = Math.max(0, img.alpha * 0.55);
-        if (img.isSpin) {
-          pxRect(img.x + 9, img.y, 36, 36, '#38bdf8');
-        } else {
-          pxRect(img.x, img.y + 4, img.w, img.h - 4, '#38bdf8');
-        }
-        ctx.restore();
-      });
-    }
-
-
-    // ==========================================
-    // 16-BIT QUADRUPED SHARK SPRITE (STABLE HITBOX)
-    // ==========================================
-    function drawQuadrupedShark16Bit() {
-      if (player.invulnTimer > 0 && Math.floor(player.invulnTimer * 16) % 2 === 0) {
-        return;
-      }
-
-      const cx = Math.round(player.x + player.w / 2);
-      const cy = Math.round(player.y + player.h / 2);
-
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.scale(player.facing, 1);
-
-      if (!player.isGrounded && !player.isSliding) {
-        ctx.rotate(player.spinAngle);
-        pxRect(-21, -21, 42, 42, '#05070e');
-        pxRect(-18, -18, 36, 36, '#0284c7');
-        pxRect(-21, -12, 42, 24, '#38bdf8');
-        pxRect(-12, -21, 24, 42, '#38bdf8');
-        pxRect(-24, -6, 6, 12, '#0369a1');
-        pxRect(18, -6, 6, 12, '#0369a1');
-        pxRect(-10, -10, 20, 20, '#e0f2fe');
-        pxRect(-7, -3, 14, 6, '#ef4444');
-        ctx.restore();
-        return;
-      }
-
-      if (player.isSliding) {
-        const sy = -11;
-        pxRect(-27, sy - 3, 54, 24, '#05070e');
-        pxRect(24, sy + 3, 18, 15, '#05070e');
-
-        pxRect(-34, sy + 2, 10, 14, '#0284c7');
-        pxRect(-40, sy - 1, 7, 7, '#38bdf8');
-        pxRect(-40, sy + 12, 7, 7, '#38bdf8');
-
-        pxRect(-10, sy - 8, 16, 8, '#0369a1');
-        pxRect(-16, sy - 11, 10, 4, '#0284c7');
-
-        pxRect(-24, sy, 48, 18, '#38bdf8');
-        pxRect(-24, sy, 48, 4, '#7dd3fc');
-        pxRect(24, sy + 6, 12, 9, '#38bdf8');
-        pxRect(36, sy + 9, 6, 6, '#38bdf8');
-
-        pxRect(-18, sy + 12, 48, 6, '#f0f9ff');
-
-        pxRect(6, sy, 15, 4, '#ef4444');
-        const wave = Math.floor(Date.now() / 80) % 2 === 0 ? -3 : 0;
-        pxRect(-12, sy - 2 + wave, 18, 3, '#ef4444');
-
-        pxRect(15, sy + 4, 6, 5, '#05070e');
-        pxRect(18, sy + 4, 3, 3, '#ffffff');
-
-        pxRect(24, 9, 9, 3, '#facc15');
-        pxRect(-12, 9, 9, 3, '#38bdf8');
-
-        ctx.restore();
-        return;
-      }
-
-      const stride = Math.sin(player.runCycle);
-      const stride2 = Math.cos(player.runCycle);
-      const bob = Math.round(Math.abs(stride) * -3);
-      const by = -18 + bob;
-
-      const backLegX = Math.round(stride * 9);
-      const frontBackLegX = Math.round(-stride * 9);
-      pxRect(-21 + backLegX, by + 24, 9, 12, '#0369a1');
-      pxRect(9 + frontBackLegX, by + 24, 9, 12, '#0369a1');
-
-      const tailWag = Math.round(stride2 * 4);
-      pxRect(-35, by + 7 + tailWag, 14, 13, '#05070e');
-      pxRect(-33, by + 9 + tailWag, 12, 9, '#0284c7');
-      pxRect(-42, by + 3 + tailWag, 9, 9, '#38bdf8');
-      pxRect(-42, by + 15 + tailWag, 9, 9, '#38bdf8');
-
-      pxRect(-11, by - 11, 18, 11, '#05070e');
-      pxRect(-9, by - 9, 15, 9, '#0284c7');
-      pxRect(-15, by - 15, 12, 6, '#0369a1');
-      pxRect(-18, by - 18, 6, 3, '#7dd3fc');
-
-      pxRect(-26, by + 1, 49, 25, '#05070e');
-      pxRect(13, by - 2, 22, 25, '#05070e');
-      pxRect(31, by + 4, 16, 16, '#05070e');
-
-      pxRect(-24, by + 3, 45, 21, '#38bdf8');
-      pxRect(-24, by + 3, 45, 4, '#7dd3fc');
-      pxRect(15, by, 18, 21, '#38bdf8');
-      pxRect(33, by + 6, 12, 12, '#38bdf8');
-      pxRect(45, by + 9, 6, 6, '#38bdf8');
-
-      pxRect(-18, by + 18, 45, 6, '#f0f9ff');
-      pxRect(24, by + 15, 18, 6, '#f0f9ff');
-
-      pxRect(6, by + 9, 3, 9, '#0369a1');
-      pxRect(11, by + 9, 3, 9, '#0369a1');
-
-      pxRect(27, by + 13, 3, 3, '#ffffff');
-      pxRect(33, by + 13, 3, 3, '#ffffff');
-      pxRect(39, by + 13, 3, 3, '#ffffff');
-
-      pxRect(15, by + 1, 18, 4, '#ef4444');
-      const flap = Math.floor(Date.now() / 75) % 2 === 0 ? -3 : 2;
-      pxRect(-3, by - 2 + flap, 18, 3, '#ef4444');
-      pxRect(-9, by + 2 - flap, 15, 3, '#dc2626');
-
-      pxRect(24, by + 4, 6, 6, '#05070e');
-      pxRect(27, by + 4, 3, 3, '#ffffff');
-
-      const rearPawX = Math.round(-stride * 10);
-      const frontPawX = Math.round(stride * 10);
-
-      pxRect(-22 + rearPawX, by + 21, 12, 13, '#05070e');
-      pxRect(-21 + rearPawX, by + 22, 10, 11, '#38bdf8');
-      pxRect(-21 + rearPawX, by + 32, 12, 4, '#ef4444');
-      pxRect(-15 + rearPawX, by + 32, 6, 4, '#ffffff');
-
-      pxRect(10 + frontPawX, by + 21, 12, 13, '#05070e');
-      pxRect(11 + frontPawX, by + 22, 10, 11, '#38bdf8');
-      pxRect(11 + frontPawX, by + 32, 12, 4, '#ef4444');
-      pxRect(17 + frontPawX, by + 32, 6, 4, '#ffffff');
-
-      ctx.restore();
-    }
-
-    function drawBossCore() {
-      if (!bossActive || gameState !== 'PLAYING') return;
-      // Reachable from the last ground section with a normal or double spin-jump.
-      const c = currentStage().accent;
-      const active = bossWeakTimer > 0;
-      const pulse = Math.sin(performance.now() * 0.014) * 4;
-      ctx.save();
-      pxRect(core.x-6, core.y-6, core.w+12, core.h+12, '#05070e');
-      pxRect(core.x, core.y, core.w, core.h, active ? '#facc15' : '#475569');
-      pxRect(core.x+6, core.y+6, core.w-12, core.h-12, active ? '#ffffff' : c);
-      if (active) {
-        ctx.strokeStyle = '#fef08a'; ctx.lineWidth = 4;
-        ctx.strokeRect(core.x - 9 - pulse, core.y - 9 - pulse, core.w + 18 + pulse*2, core.h + 18 + pulse*2);
-      }
-      ctx.textAlign='center'; ctx.font='bold 12px "Courier New", monospace';
-      ctx.fillStyle = active ? '#fef08a' : '#cbd5e1';
-      ctx.fillText(active ? 'JUMP INTO CORE!' : 'DODGE TO EXPOSE CORE', 580, core.y - 17);
-      ctx.restore();
-    }
-
-    function drawHUD() {
-      pxRect(16, 14, 118, 32, '#05070e');
-      pxRect(18, 16, 114, 28, '#1e293b');
-      for (let i = 0; i < player.maxHp; i++) {
-        pxRect(24 + i * 35, 20, 28, 20, '#05070e');
-        pxRect(26 + i * 35, 22, 24, 16, i < player.hp ? '#ef4444' : '#334155');
-        if (i < player.hp) {
-          pxRect(28 + i * 35, 24, 8, 4, '#fca5a5');
-        }
-      }
-
-      ctx.textAlign = 'left';
-      ctx.fillStyle = SFX.muted ? '#ef4444' : '#facc15';
-      ctx.font = 'bold 13px "Courier New", monospace';
-      ctx.fillText(SFX.muted ? 'SFX: OFF (M)' : 'SFX: ON (M)', 20, 62);
-
-      pxRect(canvas.width - 236, 14, 220, 54, '#05070e');
-      pxRect(canvas.width - 234, 16, 216, 50, '#1e293b');
-
-      ctx.textAlign = 'right';
-      ctx.fillStyle = '#facc15';
-      ctx.font = 'bold 21px "Courier New", monospace';
-      ctx.fillText(`SCORE ${String(Math.floor(score)).padStart(5, '0')}`, canvas.width - 26, 38);
-
-      ctx.fillStyle = '#7dd3fc';
-      ctx.font = 'bold 14px "Courier New", monospace';
-      ctx.fillText(`BEST  ${String(highScore).padStart(5, '0')}`, canvas.width - 26, 58);
-
-      pxRect(350, 14, 200, 27, '#05070e');
-      pxRect(352, 16, 196, 23, '#1e293b');
-      ctx.textAlign = 'center';
-      ctx.fillStyle = currentStage().wave;
-      ctx.font = 'bold 13px "Courier New", monospace';
-      ctx.fillText(`LEVEL ${stageIndex + 1}/4: ${currentStage().name}`, 450, 32);
-      if (bossActive) {
-        ctx.fillStyle = '#facc15'; ctx.font = 'bold 12px "Courier New", monospace';
-        ctx.fillText(`BOSS HP: ${'■'.repeat(bossHP)}${'□'.repeat(bossMaxHP-bossHP)}`, 450, 57);
-      } else if (titanFuryMode) {
-        ctx.fillStyle = '#fb7185';
-        ctx.font = 'bold 12px "Courier New", monospace';
-        ctx.fillText('MODE: TITAN FURY', 450, 57);
-      } else {
-        ctx.fillStyle = '#86efac';
-        ctx.font = 'bold 11px "Courier New", monospace';
-        ctx.fillText(`ESCAPE ${Math.min(100, Math.floor(stageProgress/STAGE_TARGET*100))}%`, 450, 57);
-      }
-    }
-
-    function drawOverlay(title, subtitle, actionText) {
-      ctx.fillStyle = 'rgba(5, 7, 14, 0.80)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      pxRect(150, 125, 600, 195, '#facc15');
-      pxRect(154, 129, 592, 187, '#0f172a');
-
-      ctx.textAlign = 'center';
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 32px "Courier New", monospace';
-      ctx.fillText(title, canvas.width / 2, 178);
-
-      ctx.fillStyle = '#f8fafc';
-      ctx.font = 'bold 17px "Courier New", monospace';
-      if (ctx.measureText(subtitle).width > 555) ctx.font = 'bold 13px "Courier New", monospace';
-      ctx.fillText(subtitle, canvas.width / 2, 225);
-
-      if (Math.floor(Date.now() / 350) % 2 === 0) {
-        ctx.fillStyle = '#facc15';
-        ctx.font = 'bold 22px "Courier New", monospace';
-        ctx.fillText(actionText, canvas.width / 2, 282);
-      }
-    }
-
-    // Main Animation Loop
-    let lastTime = performance.now();
-    function loop(now) {
-      const dt = Math.max(0, Math.min(1 / 30, (now - lastTime) / 1000));
-      lastTime = now;
-
-      update(dt);
-      draw();
-      requestAnimationFrame(loop);
-    }
-
-    requestAnimationFrame(loop);
-  </script>
-
-  <script>
-  (function () {
-    const script = document.createElement("script");
-    script.src =
-      "https://dim1024.github.io/VexIQ-Adapter/vex-controller.js?v=" +
-      Date.now();
-    document.body.appendChild(script);
-  })();
-  </script>
-  
+  }
+  // torpedo-shaped shark
+  pxRect(-34,-14,68,28,'#05070e');pxRect(34,-8,8,16,'#05070e');pxRect(-8,-25,18,12,'#05070e');pxRect(-44,-15,12,30,'#05070e');
+  pxRect(-32,-12,64,24,A);pxRect(32,-6,8,12,A);pxRect(-6,-23,14,11,A);
+  pxRect(-32,4,64,8,B);pxRect(-42,-13,10,26,B);
+  pxRect(-32,-12,64,3,'#ffffff');
+  pxRect(18,-7,6,6,'#05070e');pxRect(21,-7,3,3,'#ffffff');
+  pxRect(24,0,12,3,'#ffffff');
+  ctx.restore();
+}
+function drawQuadrupedShark16Bit(){
+  if(player.dashTimer>0||player.dashIframes>0){drawDashShark();return;}
+  if(player.invulnTimer>0&&Math.floor(player.invulnTimer*16)%2===0)return;
+  const cx=Math.round(player.x+player.w/2),cy=Math.round(player.y+player.h/2);
+  ctx.save();ctx.translate(cx,cy);ctx.scale(player.facing,1);
+  if(!player.isGrounded&&!player.isSliding){
+    ctx.rotate(player.spinAngle);
+    pxRect(-21,-21,42,42,'#05070e');pxRect(-18,-18,36,36,'#0284c7');pxRect(-21,-12,42,24,'#38bdf8');pxRect(-12,-21,24,42,'#38bdf8');pxRect(-24,-6,6,12,'#0369a1');pxRect(18,-6,6,12,'#0369a1');pxRect(-10,-10,20,20,'#e0f2fe');pxRect(-7,-3,14,6,'#ef4444');
+    ctx.restore();return;
+  }
+  if(player.isSliding){
+    const sy=-11;
+    pxRect(-27,sy-3,54,24,'#05070e');pxRect(24,sy+3,18,15,'#05070e');pxRect(-34,sy+2,10,14,'#0284c7');pxRect(-40,sy-1,7,7,'#38bdf8');pxRect(-40,sy+12,7,7,'#38bdf8');
+    pxRect(-10,sy-8,16,8,'#0369a1');pxRect(-16,sy-11,10,4,'#0284c7');pxRect(-24,sy,48,18,'#38bdf8');pxRect(-24,sy,48,4,'#7dd3fc');pxRect(24,sy+6,12,9,'#38bdf8');pxRect(36,sy+9,6,6,'#38bdf8');
+    pxRect(-18,sy+12,48,6,'#f0f9ff');pxRect(6,sy,15,4,'#ef4444');const w=Math.floor(Date.now()/80)%2===0?-3:0;pxRect(-12,sy-2+w,18,3,'#ef4444');
+    pxRect(15,sy+4,6,5,'#05070e');pxRect(18,sy+4,3,3,'#fff');pxRect(24,9,9,3,'#facc15');pxRect(-12,9,9,3,'#38bdf8');
+    ctx.restore();return;
+  }
+  const st=Math.sin(player.runCycle),st2=Math.cos(player.runCycle),bob=Math.round(Math.abs(st)*-3),by=-18+bob;
+  const bl=Math.round(st*9),fl=Math.round(-st*9);
+  pxRect(-21+bl,by+24,9,12,'#0369a1');pxRect(9+fl,by+24,9,12,'#0369a1');
+  const tw=Math.round(st2*4);
+  pxRect(-35,by+7+tw,14,13,'#05070e');pxRect(-33,by+9+tw,12,9,'#0284c7');pxRect(-42,by+3+tw,9,9,'#38bdf8');pxRect(-42,by+15+tw,9,9,'#38bdf8');
+  pxRect(-11,by-11,18,11,'#05070e');pxRect(-9,by-9,15,9,'#0284c7');pxRect(-15,by-15,12,6,'#0369a1');pxRect(-18,by-18,6,3,'#7dd3fc');
+  pxRect(-26,by+1,49,25,'#05070e');pxRect(13,by-2,22,25,'#05070e');pxRect(31,by+4,16,16,'#05070e');
+  pxRect(-24,by+3,45,21,'#38bdf8');pxRect(-24,by+3,45,4,'#7dd3fc');pxRect(15,by,18,21,'#38bdf8');pxRect(33,by+6,12,12,'#38bdf8');pxRect(45,by+9,6,6,'#38bdf8');
+  pxRect(-18,by+18,45,6,'#f0f9ff');pxRect(24,by+15,18,6,'#f0f9ff');pxRect(6,by+9,3,9,'#0369a1');pxRect(11,by+9,3,9,'#0369a1');
+  pxRect(27,by+13,3,3,'#fff');pxRect(33,by+13,3,3,'#fff');pxRect(39,by+13,3,3,'#fff');
+  pxRect(15,by+1,18,4,'#ef4444');const fp=Math.floor(Date.now()/75)%2===0?-3:2;pxRect(-3,by-2+fp,18,3,'#ef4444');pxRect(-9,by+2-fp,15,3,'#dc2626');
+  pxRect(24,by+4,6,6,'#05070e');pxRect(27,by+4,3,3,'#fff');
+  const rp=Math.round(-st*10),fpw=Math.round(st*10);
+  pxRect(-22+rp,by+21,12,13,'#05070e');pxRect(-21+rp,by+22,10,11,'#38bdf8');pxRect(-21+rp,by+32,12,4,'#ef4444');pxRect(-15+rp,by+32,6,4,'#fff');
+  pxRect(10+fpw,by+21,12,13,'#05070e');pxRect(11+fpw,by+22,10,11,'#38bdf8');pxRect(11+fpw,by+32,12,4,'#ef4444');pxRect(17+fpw,by+32,6,4,'#fff');
+  ctx.restore();
+}
+function drawBossCore(){
+  if(!bossActive||gameState!=='PLAYING')return;
+  const c=currentStage().accent,active=bossWeakTimer>0,pulse=Math.sin(performance.now()*.014)*4;
+  ctx.save();
+  pxRect(core.x-6,core.y-6,core.w+12,core.h+12,'#05070e');pxRect(core.x,core.y,core.w,core.h,active?'#facc15':'#475569');pxRect(core.x+6,core.y+6,core.w-12,core.h-12,active?'#fff':c);
+  if(active){ctx.strokeStyle='#fef08a';ctx.lineWidth=4;ctx.strokeRect(core.x-9-pulse,core.y-9-pulse,core.w+18+pulse*2,core.h+18+pulse*2);}
+  ctx.textAlign='center';ctx.font='bold 12px "Courier New", monospace';ctx.fillStyle=active?'#fef08a':'#cbd5e1';
+  ctx.fillText(active?'JUMP OR DASH INTO CORE!':'DODGE TO EXPOSE CORE',580,core.y-17);ctx.restore();
+}
+function drawHUD(){
+  pxRect(16,14,178,32,'#05070e');pxRect(18,16,174,28,'#1e293b');
+  for(let i=0;i<player.maxHp;i++){pxRect(24+i*16,20,14,20,'#05070e');pxRect(25+i*16,21,12,18,i<player.hp?'#ef4444':'#334155');if(i<player.hp)pxRect(26+i*16,23,5,3,'#fca5a5');}
+  ctx.textAlign='left';ctx.fillStyle=SFX.muted?'#ef4444':'#facc15';ctx.font='bold 13px "Courier New", monospace';ctx.fillText(SFX.muted?'SFX: OFF (M)':'SFX: ON (M)',20,62);
+  pxRect(20,68,100,9,'#05070e');
+  {const ready=player.dashCooldown<=0,frac=ready?1:1-player.dashCooldown/DASH_COOLDOWN;
+   pxRect(22,70,Math.round(96*frac),5,ready?'#22d3ee':'#334155');
+   ctx.fillStyle=ready?'#a5f3fc':'#64748b';ctx.font='bold 11px "Courier New", monospace';ctx.fillText(ready?'DASH READY (SHIFT/E)':'DASH...',20,92);}
+  pxRect(canvas.width-236,14,220,54,'#05070e');pxRect(canvas.width-234,16,216,50,'#1e293b');
+  ctx.textAlign='right';ctx.fillStyle='#facc15';ctx.font='bold 21px "Courier New", monospace';ctx.fillText('SCORE '+String(Math.floor(score)).padStart(5,'0'),canvas.width-26,38);
+  ctx.fillStyle='#7dd3fc';ctx.font='bold 14px "Courier New", monospace';ctx.fillText('BEST  '+String(highScore).padStart(5,'0'),canvas.width-26,58);
+  pxRect(350,14,200,27,'#05070e');pxRect(352,16,196,23,'#1e293b');
+  ctx.textAlign='center';ctx.fillStyle=currentStage().wave;ctx.font='bold 13px "Courier New", monospace';ctx.fillText('LEVEL '+(stageIndex+1)+'/4: '+currentStage().name,450,32);
+  if(bossActive){ctx.fillStyle='#facc15';ctx.font='bold 12px "Courier New", monospace';ctx.fillText('BOSS HP: '+'\u25A0'.repeat(bossHP)+'\u25A1'.repeat(bossMaxHP-bossHP),450,57);}
+  else{ctx.fillStyle='#86efac';ctx.font='bold 11px "Courier New", monospace';ctx.fillText('ESCAPE '+Math.min(100,Math.floor(stageProgress/STAGE_TARGET*100))+'%',450,57);}
+}
+function drawOverlay(title,sub,action){
+  ctx.fillStyle='rgba(5,7,14,.8)';ctx.fillRect(0,0,canvas.width,canvas.height);
+  pxRect(150,125,600,195,'#facc15');pxRect(154,129,592,187,'#0f172a');
+  ctx.textAlign='center';ctx.fillStyle='#38bdf8';ctx.font='bold 32px "Courier New", monospace';ctx.fillText(title,450,178);
+  ctx.fillStyle='#f8fafc';ctx.font='bold 17px "Courier New", monospace';if(ctx.measureText(sub).width>555)ctx.font='bold 13px "Courier New", monospace';ctx.fillText(sub,450,225);
+  if(Math.floor(Date.now()/350)%2===0){ctx.fillStyle='#facc15';ctx.font='bold 22px "Courier New", monospace';ctx.fillText(action,450,282);}
+}
+let lastTime=performance.now();
+function loop(now){const dt=Math.max(0,Math.min(1/30,(now-lastTime)/1000));lastTime=now;update(dt);draw();requestAnimationFrame(loop);}
+requestAnimationFrame(loop);
+</script>
 </body>
 </html>
